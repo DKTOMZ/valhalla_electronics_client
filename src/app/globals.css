@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.card-list {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+  }
+
+.card-list::-webkit-scrollbar {
+    display: none;
+}
+
+::-ms-reveal {
+    display: none;
+}
+
+.zoomable {
+    transition: transform 0.5s;
+}
+  
+.scale-125 {
+    transform: scale(1.25);
+}
+
+.search-1 {
+    width: 500px;
+}
+
+@media(max-width: 310px){
+    .custom-search-icon {
+        display: none;
+    }
+    .search-bar {
+        width: 100% !important;
+    }
+    .title {
+        display: none;
+    }
+    .checkout-navigation {
+        display: inline !important;
+    }
+}
+
+@media(max-width: 768px) {
+    .card-list .card {
+        height: 280px;
+        width: 220px;
+    } 
+}
+
+@media(min-width: 768px) {
+    .card-list .card { 
+        height: 300px ;
+        width: 250px ;
+    }
+}
+
+
+
+@media(min-width: 940px) {
+    .card-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+}
+
+@media(min-width: 1180px) {
+    .card-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
+@media(min-width: 1536px) {
+    .card-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    }
+}
+
+@media(min-width: 1900px) {
+    .card-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+}
+@media(min-width: 2300px) {
+    .card-grid {
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    }
+}
+
+@media(max-width: 450px) {
+    .hoz-card2 {
+        height: 112px;
+    }
+}
+
+@media(max-width: 470px) {
+    .hoz-card2 {
+        width: 33.33%;
+    }
+}
+
+@media(max-width: 370px) {
+    .cart-controls {
+        flex-direction: column !important;
+        align-items: start;
+        gap: 8px 0px;
+    }
+}
+
+@media(max-width: 1039px) {
+    .search-2 {
+        display: flex;
+    }
+    .product-image-1 {
+        height: 300px !important;
+        width: 500px !important;
+    }
+}
+
+@media(min-width: 1040px) {
+    .search-1 {
+        display: flex;
+    }
+    .top-space {
+        margin-top: 8rem !important;
+    }
+}
+
+@media(min-width: 1500px) {
+    .search-1 {
+        width: 900px;
+    }
+    .product-image-1 {
+        height: 450px !important;
+        width: 700px !important;
+    }
+    .product-image-2 {
+        height: 700px !important;
+    }
+}
+
+@media(max-width: 315px) {
+    .product-price {
+        flex-direction: column !important;
+        justify-items: flex-start !important;
+        align-items: start !important;
+    }
+}
