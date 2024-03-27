@@ -4,5 +4,6 @@ export interface PromocodeType {
     validUntil: string,
     discountPercent: number,
     created: Date,
-    updated: Date
+    updated: Date,
+    error?: string
 }

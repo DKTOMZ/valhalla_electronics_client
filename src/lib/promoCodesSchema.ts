@@ -15,6 +15,16 @@ const PromoCodeSchema = new mongoose.Schema({
     discountPercent: {
         type: Number,
         required: true
+    },
+    created: {
+        type: Date,
+        required: false,
+        default: new Date()
+    },
+    updated: {
+        type: Date,
+        required: false,
+        default: new Date()
     }
 },{ versionKey: false });
 

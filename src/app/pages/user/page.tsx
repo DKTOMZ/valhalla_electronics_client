@@ -29,10 +29,12 @@ const User: React.FC = () => {
     const [currentPasswordVisible,setCurrentPasswordVisible] = useState(false);
     const [newConfirmPasswordVisible,setNewConfirmPasswordVisible] = useState(false);
     const [loadingSubmit, setLoadingSubmit] = useState(false);
+    const [loadingSubmitName, setLoadingSubmitName] = useState(false);
     const [changePasswordSuccess,setChangePasswordSuccess] = useState(false);
     const [uploading,setUploading] = useState(false);
     const [loading,setLoading] = useState(true);
     const [currencies,setCurrencies] = useState<CurrenciesType[]>([]);
+    const [name,setName] = useState('');
 
     //Element refs
     const currentPasswordElement = useRef<HTMLInputElement>(null);
@@ -44,6 +46,7 @@ const User: React.FC = () => {
     const changePasswordError = useRef<HTMLElement>(null) as MutableRefObject<HTMLDivElement>;
     const imageField = useRef<HTMLInputElement>() as MutableRefObject<HTMLInputElement>;
     const saveImageError = useRef<HTMLInputElement>() as MutableRefObject<HTMLInputElement>;
+    const updateNameError = useRef<HTMLInputElement>() as MutableRefObject<HTMLInputElement>;
 
     useEffect(()=>{
         const fetchCurrencies = async() => {
@@ -60,6 +63,12 @@ const User: React.FC = () => {
     },[http])
 
     const {data: session, status, update} = useSession();
+
+    useEffect(()=>{
+        if(session && session.user && session.user.name){
+            setName(session.user?.name);
+        }
+    },[session])
     
     
     const uploadImage = async(file: File | null | undefined) => {
@@ -126,6 +135,31 @@ const User: React.FC = () => {
     
     };
 
+    const handleUpdateName = async()=>{
+        const response = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/auth/private/profile/picture/upload`,
+            JSON.stringify(
+                {
+                    email: session?.user?.email,
+                    name: name
+                }
+            )
+        );
+
+        if(response.status > 200 && response.status < 300 && response.data.success){
+            const updateUser = {
+                expires: session?.expires,
+                user: {
+                  email: session?.user?.email,
+                  image: session?.user?.image,
+                  name: name
+                },
+            };
+            await update(updateUser);
+        } else {
+            updateNameError.current.innerHTML = response.data.error || '';
+        }
+    };
+
     return (
         <>
         {status === 'loading' || loading ? <Loading /> :
@@ -176,14 +210,25 @@ const User: React.FC = () => {
                             <input onBlur={()=>{
                             }} value={session && session.user && session.user.email ? session.user.email: ' '} required autoComplete='email' readOnly className='px-2 outline-0 w-full rounded-md h-10 ring-1 dark:bg-neutral-600 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2' type='email' name='user-email'/>
                         </div>
+                        <Collapse title="Update Name">
+                            <form onSubmit={(e)=>e.preventDefault()}>
+                                <div className='flex flex-col mb-3'>
+                                    <label htmlFor='user-name' className='sm:text-base text-sm dark:text-white'>Name</label>
+                                    <input onBlur={()=>{
+                                    }} value={name} onChange={(e)=>setName(e.target.value)} required className='px-2 outline-0 w-full rounded-md h-10 ring-1 dark:bg-neutral-600 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2' type='text' name='user-name'/>
+                                </div>
+                                <div ref={updateNameError} className='text-red-500 text-center mb-3'></div>
+                                <FormSubmitButton text='Update Name' disabled={loadingSubmitName} callback={async()=>handleUpdateName()}/>
+                            </form>
+                        </Collapse>
                         <Collapse title="Update Currency" className="sm:hidden">
-                            <div>
-                                <select title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md w-full">
-                                {currencies.map((currency)=>{
-                                    return <option key={currency.symbol} value={currency.name}>{currency.symbol}</option>
-                                })}
-                                </select>
-                            </div>
+                                <div>
+                                    <select title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md w-full">
+                                    {currencies.map((currency)=>{
+                                        return <option key={currency.symbol} value={currency.name}>{currency.symbol}</option>
+                                    })}
+                                    </select>
+                                </div>
                         </Collapse>
                     {/* eslint-disable-next-line no-prototype-builtins */}
                         {session && !session.user?.hasOwnProperty('thirdparty')
@@ -252,7 +297,7 @@ const User: React.FC = () => {
                 </div>
             </div>
         </Layout>
-        : redirect('/pages/login')
+        : redirect('/pages/auth/login')
         }
         </>
     );

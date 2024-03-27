@@ -25,6 +25,7 @@
     "autoprefixer": "10.4.16",
     "axios": "^1.5.0",
     "bcryptjs": "^2.4.3",
+    "currency-converter-lt": "^2.0.1",
     "eslint": "8.49.0",
     "eslint-config-next": "13.5.2",
     "inversify": "^6.0.1",

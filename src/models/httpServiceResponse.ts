@@ -5,5 +5,5 @@ export interface HttpServiceResponse<T = any> {
     status: number;
     statusText: string;
     headers: any;
-    config: AxiosRequestConfig
+    config: AxiosRequestConfig;
 }

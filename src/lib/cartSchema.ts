@@ -9,14 +9,24 @@ const cartSchema = new mongoose.Schema({
         required: true
     },
     cartItems: {
-        type: [],
+        type: [{}],
         required: true
+    },
+    created: {
+        type: Date,
+        required: false,
+        default: new Date()
+    },
+    updated: {
+        type: Date,
+        required: false,
+        default: new Date()
     }
 },{ versionKey: false });
 
 /**
  * Cart model for mongodb. Used to perform db CRUD operations.
  */
-const Cart = mongoose.models.products || mongoose.model('cart', cartSchema);
+const Cart = mongoose.models.cart || mongoose.model('cart', cartSchema);
 
 export default Cart;

@@ -12,6 +12,7 @@ import { useSession } from "next-auth/react";
 import { CurrenciesType } from "@/models/currencies";
 import { StorageService } from "@/services/storageService";
 import {AppTheme} from "@/app/appTheme";
+import { useSharedState } from "@/app/contexts/context";
 
 interface MenuBarOptions {
     text: string,
@@ -30,9 +31,11 @@ const Nav: React.FC = () => {
     const [categories,setCategories] = useState<Category[]>([]);
     const [currencies,setCurrencies] = useState<CurrenciesType[]>([]);
     const [loading,setLoading] = useState(false);
+    const { cartSize, updateCartSize } = useSharedState();
     const [appTheme, setAppTheme] = useState<AppTheme | null>();
     const[showOptions,setShowOptions] = useState(false);
     const menuBarRef = useRef<HTMLDivElement>(null) as MutableRefObject<HTMLDivElement>;
+    const { updateCurrency } = useSharedState();
 
     const menuBarOptions: MenuBarOptions[] = [
         {text:'Favorites',icon:'fa-solid fa-heart',callback:()=>{router.push('/pages/favorites')}},
@@ -59,7 +62,7 @@ const Nav: React.FC = () => {
     const setDarkTheme = () => {
         if (!document.documentElement.classList.contains('dark')) {
             document.documentElement.classList.add('dark');
-            storage.addLocalObject('theme',AppTheme.DARK);
+            storage.setLocalObject('theme',AppTheme.DARK);
             setAppTheme(AppTheme.DARK);
         }
     }
@@ -67,7 +70,7 @@ const Nav: React.FC = () => {
     const setLightTheme = () => {
         if (document.documentElement.classList.contains('dark')) {
             document.documentElement.classList.remove('dark');
-            storage.addLocalObject('theme',AppTheme.LIGHT);
+            storage.setLocalObject('theme',AppTheme.LIGHT);
             setAppTheme(AppTheme.LIGHT);
         }
     }
@@ -90,8 +93,7 @@ const Nav: React.FC = () => {
 
             if (response.status >= 200 && response.status<=299 && response.data) {
                 setCategories([...response.data.filter((category)=>category.name!='Electronics')]);
-                storage.addSessionObject('categories',JSON.stringify(response.data.filter((category)=>category.name!='Electronics')));
-                setLoading(false);
+                storage.setSessionObject('categories',JSON.stringify(response.data.filter((category)=>category.name!='Electronics')));
             } else {
                 //
             }
@@ -102,12 +104,13 @@ const Nav: React.FC = () => {
 
             if (response.status >= 200 && response.status<=299 && response.data) {
                 setCurrencies([...response.data]);
-                storage.addSessionObject('currencies',JSON.stringify(response.data));
+                updateCurrency(response.data.filter((item)=>item.symbol=='KES')[0]);
                 setLoading(false);
             } else {
                 //
             }
         }
+
         if (typeof window !== 'undefined') {
             if (storage.getLocalObject('theme') === 'dark' || (!storage.getLocalObject('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
@@ -120,7 +123,27 @@ const Nav: React.FC = () => {
         !storage.getSessionObject('categories') ? fetchCategories() : setCategories(JSON.parse(storage.getSessionObject('categories') || ''));
 
         !storage.getSessionObject('currencies') ? fetchCurrencies(): setCurrencies(JSON.parse(storage.getSessionObject('currencies') || ''));
-    },[http, storage]);
+    },[http]);
+
+    const { data: session , status } = useSession();
+
+    useEffect(()=>{
+        const fetchCartSize = async() => {
+            return await http.post<{size: number}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/getSize`,JSON.stringify({
+                email: session?.user?.email
+            }));
+        };
+        const cartSize = storage.getSessionObject('cartSize');
+
+        !cartSize && session && fetchCartSize().then((response)=>{
+            if(response.status >= 200 && response.status < 300){
+                updateCartSize(response.data.size);
+            } else {
+                updateCartSize(0);
+            }
+        });
+
+    },[session,storage])
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -140,8 +163,6 @@ const Nav: React.FC = () => {
           mediaQuery.removeEventListener('change', handleMediaChange);
         };
       }, [storage]);
-
-    const { data: session , status } = useSession();
     
     if (status === 'loading') {
       return;
@@ -227,13 +248,16 @@ const Nav: React.FC = () => {
                             <button onClick={()=>router.push('/pages/favorites')} title="favorites" className="max-md:hidden"><i className="fa-solid fa-heart fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-400"></i></button>
                             <button onClick={()=>router.push('/pages/checkout')} title="cart" className="relative">
                                 <i className="fa-solid fa-cart-arrow-down fa-xl"></i>
-                                <div className="absolute pl-1 -top-5 text-black dark:text-white w-full text-center">0</div>
+                                <div className="absolute pl-1 -top-5 text-black dark:text-white w-full text-center">{cartSize}</div>
                             </button>
-                            <select title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden ">
+                            {currencies.length > 0 ? 
+                            <select defaultValue={currencies.filter((item)=>item.symbol=='KES')[0].symbol}
+                             onChange={(e)=>updateCurrency(currencies.filter((item)=>item.name=e.target.value)[0])} title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden">
                                 {currencies.map((currency)=>{
-                                    return <option key={currency.symbol} value={currency.name}>{currency.symbol}</option>
+                                    return <option key={currency.symbol} value={currency.symbol}>{currency.symbol}</option>
                                 })}
                             </select>
+                            : null}
                     </div>
                 </div>
                 <SearchBar categories={categories} className="hidden search-2 max-sm:inline max-sm:w-full items-center justify-center mb-4"/>

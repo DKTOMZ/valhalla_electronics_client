@@ -2,14 +2,13 @@ import { DbConnService } from "@/services/dbConnService";
 import {BackendServices} from "@/app/api/inversify.config";
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import Favorites from "@/lib/favoritesSchema";
-import { FavoritesType } from "@/models/favorites";
-import mongoose from "mongoose";
+import Cart from "@/lib/cartSchema";
+import { Cart as CartType } from "@/models/cart";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
         throw new Error('Missing NEXT_PUBLIC_COOKIE_NAME property in env file');
     }
@@ -27,7 +26,7 @@ export async function POST(req: NextRequest) {
     }});
 }
 
-export async function GET(req: NextRequest,{params}:{params:{id:string}}) {
+export async function POST(req: NextRequest) {
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
         throw new Error('Missing NEXT_PUBLIC_COOKIE_NAME property in env file');
     }
@@ -45,27 +44,24 @@ export async function GET(req: NextRequest,{params}:{params:{id:string}}) {
     }}));
 
 
-    let objectId: mongoose.Types.ObjectId ;
-    const id = params['id'].replace('id=','');
+    const { email }:{email: string} = await req.json();
 
-    if (!id) {
-        return new Response(JSON.stringify({error:'id is not provided'}),{ status: 409, headers: {
+    if (!email) {
+        return new Response(JSON.stringify({error:'email is not provided'}),{ status: 409, headers: {
             'Content-Type':'application/json'
         }})
     }
 
     try {
-        objectId = new mongoose.Types.ObjectId(id);
-    } catch (error:any) {
-        return new Response(JSON.stringify({'error':'Invalid product id. Product does not exist'}),{status:404,headers:{
-            'Content-Type':'application/json'
-        }});
-    }
+        const cart = await Cart.findOne<CartType>({email: email});
 
-    try {
-        const favorite = await Favorites.find<FavoritesType>({_id:id});
+        if(!cart) {
+            return new Response(JSON.stringify({'error':'User cart is empty'}),{status:404,headers:{
+                'Content-Type':'application/json'
+            }});
+        }
 
-        return new Response(JSON.stringify(favorite[0]),{status:200,headers:{
+        return new Response(JSON.stringify({'size':cart.cartItems.length}),{status:200,headers:{
             'Content-Type':'application/json'
         }});
     } catch (error:any) {

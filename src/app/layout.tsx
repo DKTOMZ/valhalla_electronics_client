@@ -5,6 +5,7 @@ import {ABeeZee} from 'next/font/google'
 import Script from 'next/script'
 import {Session} from 'next-auth'
 import React, {useEffect} from 'react'
+import { SharedStateProvider } from './contexts/context'
 
 const inter = ABeeZee({ subsets: ['latin'], weight: '400' })
 
@@ -24,9 +25,11 @@ export default function RootLayout(x: { children: React.ReactNode, session: Sess
       <Script src='https://kit.fontawesome.com/086823c0ac.js' crossOrigin='anonymous'></Script>
       <body className={`${inter.className} bg-gray-100 dark:bg-zinc-900`}>
         <div className='bg-gray-100 dark:bg-zinc-900 h-full'>
-          <SessionProvider session={x.session}>
-            {x.children}
-          </SessionProvider>
+          <SharedStateProvider>
+            <SessionProvider session={x.session}>
+                {x.children}
+            </SessionProvider>
+          </SharedStateProvider>
         </div>
       </body>
     </html>

@@ -18,9 +18,9 @@ export class StorageService {
     }
 
 
-    addLocalObject = (key: string, value: any) => this.localStorage?.setItem(key, value);
+    setLocalObject = (key: string, value: any) => this.localStorage?.setItem(key, value);
 
-    addSessionObject = (key: string, value: any) => this.sessionStorage?.setItem(key,value);
+    setSessionObject = (key: string, value: any) => this.sessionStorage?.setItem(key,value);
 
     getLocalObject = (key: string) => this.localStorage?.getItem(key);
 

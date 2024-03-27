@@ -27,6 +27,16 @@ const categorySchema = new mongoose.Schema({
         type: Array,
         required: true,
     },
+    created: {
+        type: Date,
+        required: false,
+        default: new Date()
+    },
+    updated: {
+        type: Date,
+        required: false,
+        default: new Date()
+    }
 },{ versionKey: false });
 
 /**

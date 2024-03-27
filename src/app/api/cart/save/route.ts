@@ -3,8 +3,6 @@ import {BackendServices} from "@/app/api/inversify.config";
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { Product } from "@/models/products";
-import Currency from "@/lib/currenciesSchema";
-import { CurrenciesType } from "@/models/currencies";
 import { Cart as CartType} from "@/models/cart";
 import Cart from "@/lib/cartSchema";
 
@@ -74,14 +72,14 @@ export async function POST(req: NextRequest) {
                 cartItems: [cartItem]
             });
 
-            return new Response(JSON.stringify({success:true}),{status:201,headers:{
+            return new Response(JSON.stringify({size:1}),{status:201,headers:{
                 'Content-Type':'application/json'
             }});
         }
 
         const existingCartItem = existingCart.cartItems.filter((item)=>item._id==cartItem._id);
 
-        if(existingCartItem) {
+        if(existingCartItem.length > 0) {
             return new Response(JSON.stringify({error:'Product already in cart'}),{status:409,headers:{
                 'Content-Type':'application/json'
             }});
@@ -89,7 +87,9 @@ export async function POST(req: NextRequest) {
 
         await Cart.updateOne({email:email,cartItems:[...existingCart.cartItems, cartItem]});
 
-        return new Response(JSON.stringify({success:true}),{status:201,headers:{
+        const cartAfterUpdate = await Cart.findOne<CartType>({email: email});
+
+        return new Response(JSON.stringify({size:cartAfterUpdate?.cartItems.length}),{status:201,headers:{
             'Content-Type':'application/json'
         }});
     } catch (error:any) {

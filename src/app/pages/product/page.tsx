@@ -1,4 +1,5 @@
 'use client';
+import { useSharedState } from "@/app/contexts/context";
 import Layout from "@/components/Layout";
 import ErrorPage from "@/components/error";
 import Loading from "@/components/loading";
@@ -6,6 +7,7 @@ import { FrontendServices } from "@/lib/inversify.config";
 import { Cart } from "@/models/cart";
 import { Product } from "@/models/products";
 import { HttpService } from "@/services/httpService";
+import { StorageService } from "@/services/storageService";
 import { useSession } from "next-auth/react";
 import { redirect, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -20,9 +22,9 @@ const Product: React.FC = () => {
     const [loading,setLoading] = useState(true);
     const [saving,setSaving] = useState(false);
     const [productExists,setProductExists] = useState(true);
-    const [cart,setCart] = useState<Cart>();
     const [productInCart, setProductInCart] = useState<boolean>(false);
     const { data: session , status } = useSession();
+    const { updateCartSize } = useSharedState();
 
     useEffect(()=>{
         const fetchProduct = async() => {
@@ -38,23 +40,30 @@ const Product: React.FC = () => {
         productId && fetchProduct().then(response => {
             if (response.status >= 200 && response.status<=299 && response.data) {
                 setProduct(response.data);
-                setLoading(false);
+                session && fetchCart().then((response)=>{
+                    if(response.status >= 200 && response.status < 300 && response.data && response.data.cartItems){
+                        const productInCart = response.data.cartItems.filter((item)=>item._id==productId);
+                        productInCart.length > 0 ? setProductInCart(true): setProductInCart(false);
+                    } else {
+                        //
+                    }
+                    setLoading(false);
+                });
             } else {
                 setProductExists(false);
                 setLoading(false);
             }
         });
 
-        session && fetchCart().then((response)=>setCart(response.data))
-    },[http,productId])
+    },[http,productId, session])
 
     const addToCart = async(e: React.FormEvent<HTMLButtonElement>) => {
+        setSaving(true);
         e.preventDefault();
         if(!session){
-            redirect('/pages/login');
+            redirect('/pages/auth/login');
         } else {
-            setSaving(true);
-            const response = await http.post(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/save`,
+            const response = await http.post<{size:number}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/save`,
                 JSON.stringify({
                     email: session?.user?.email,
                     cartItem: product
@@ -62,6 +71,7 @@ const Product: React.FC = () => {
             );
             if(response.status >= 200 && response.status < 300) {
                 setProductInCart(true);
+                updateCartSize(response.data.size)
             } else {
                 setProductInCart(false);
             }
@@ -140,7 +150,7 @@ const Product: React.FC = () => {
                         <div style={{height:'500px'}} className="flex product-image-2 flex-row max-md:!h-auto max-md:!w-auto items-center justify-center mx-auto"><img src={`${product?.images[1].link}`} className="h-full w-full" alt={`${product?.name}`}/></div>
                         <h3 className="text-lg text-black mt-8 dark:text-white w-full border-b-2 mb-4 border-b-gray-300">Specifications</h3>
                         {product && Object.keys(product?.properties).map((key,index)=>{
-                            return <div className="flex flex-row items-center justify-center">
+                            return <div key={index} className="flex flex-row items-center justify-center">
                                 <p className="font-bold text-black dark:text-white mr-2">{key}:</p>
                                 <p className="text-black dark:text-white">{product.properties[key]}</p>
                             </div>
@@ -150,8 +160,8 @@ const Product: React.FC = () => {
                     <div className="flex flex-col gap-x-4 items-start dark:bg-transparent bg-white shadow-zinc-700 dark:shadow-slate-300 shadow-sm rounded-md p-4">
                         <h3 className="text-xl text-black dark:text-white w-full border-b-2 mb-4 border-b-gray-300">What`s in the box</h3>
                         <ul className="text-black dark:text-white list-disc ml-4">
-                            {product && product.contents.split(',').map((item)=>{
-                                return <li>{item}</li>
+                            {product && product.contents.split(',').map((item,index)=>{
+                                return <li key={index}>{item}</li>
                             })}
                         </ul>
                     </div>

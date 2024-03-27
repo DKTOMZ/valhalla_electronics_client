@@ -35,6 +35,16 @@ const productSchema = new mongoose.Schema({
     stock: {
         type: Number,
         default: 0
+    },
+    created: {
+        type: Date,
+        required: false,
+        default: new Date()
+    },
+    updated: {
+        type: Date,
+        required: false,
+        default: new Date()
     }
 },{ versionKey: false });
 

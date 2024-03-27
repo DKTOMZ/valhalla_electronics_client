@@ -2,8 +2,8 @@ import { DbConnService } from "@/services/dbConnService";
 import {BackendServices} from "@/app/api/inversify.config";
 import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import Favorites from "@/lib/favoritesSchema";
-import { FavoritesType } from "@/models/favorites";
+import { PromocodeType } from "@/models/promocode";
+import Promocode from "@/lib/promoCodesSchema";
 import mongoose from "mongoose";
 
 //Services
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     }});
 }
 
-export async function GET(req: NextRequest,{params}:{params:{id:string}}) {
+export async function GET(req: NextRequest,{params}:{params:{code:string}}) {
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
         throw new Error('Missing NEXT_PUBLIC_COOKIE_NAME property in env file');
     }
@@ -44,28 +44,30 @@ export async function GET(req: NextRequest,{params}:{params:{id:string}}) {
         'Content-Type':'application/json'
     }}));
 
+    const code = params['code'].replace('code=','');
 
-    let objectId: mongoose.Types.ObjectId ;
-    const id = params['id'].replace('id=','');
-
-    if (!id) {
-        return new Response(JSON.stringify({error:'id is not provided'}),{ status: 409, headers: {
+    if (!code) {
+        return new Response(JSON.stringify({error:'code is not provided'}),{ status: 409, headers: {
             'Content-Type':'application/json'
         }})
     }
 
     try {
-        objectId = new mongoose.Types.ObjectId(id);
-    } catch (error:any) {
-        return new Response(JSON.stringify({'error':'Invalid product id. Product does not exist'}),{status:404,headers:{
-            'Content-Type':'application/json'
-        }});
-    }
+        const promocode = await Promocode.find<PromocodeType>({code:code});
 
-    try {
-        const favorite = await Favorites.find<FavoritesType>({_id:id});
+        if(promocode.length === 0) {
+            return new Response(JSON.stringify({'error':'Promocode does not exist'}),{status:200,headers:{
+                'Content-Type':'application/json'
+            }});
+        }
 
-        return new Response(JSON.stringify(favorite[0]),{status:200,headers:{
+        if(new Date() >= new Date(promocode[0].validUntil)){
+            return new Response(JSON.stringify({'error':'Promocode has expired'}),{status:200,headers:{
+                'Content-Type':'application/json'
+            }});
+        }
+
+        return new Response(JSON.stringify(promocode[0]),{status:200,headers:{
             'Content-Type':'application/json'
         }});
     } catch (error:any) {

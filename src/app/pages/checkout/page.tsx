@@ -1,13 +1,31 @@
 'use client'
 
+import { useSharedState } from "@/app/contexts/context";
 import Layout from "@/components/Layout";
 import { Collapse } from "@/components/collapse";
-import React, { useState } from "react";
+import Loading from "@/components/loading";
+import { FrontendServices } from "@/lib/inversify.config";
+import { Cart } from "@/models/cart";
+import { PromocodeType } from "@/models/promocode";
+import { HttpService } from "@/services/httpService";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
+import { todo } from "node:test";
+import React, { MutableRefObject, useEffect, useRef, useState } from "react";
 
 const Checkout: React.FC = () => {
 
-    const [tabs] = useState([
-        <Cart key={'cart'}/>,
+    const http = FrontendServices.get<HttpService>('HttpService');
+    const { data: session , status } = useSession();
+
+    const { cart, updateCart, useCurrentCurrency, cartTotal, updateCartTotal, shippingFee, updateShippingFee, currency} = useSharedState();
+    
+    const [loading,setLoading] = useState<boolean>(true);
+    const [loadingPromocode,setLoadingPromocode] = useState<boolean>(true);
+    const [promocode, setPromocode] = useState('');
+    const [discount, setDiscount] = useState(0);
+
+    const [tabs, setTabs] = useState([
         <Shipping key={'shipping'}/>,
         <Payment key={'payment'}/>
     ]);
@@ -16,8 +34,58 @@ const Checkout: React.FC = () => {
     const [cartComplete,setCartComplete] = useState(false);
     const [shippingComplete,setShippingComplete] = useState(false);
 
+    const promocodeError = useRef<HTMLElement>() as MutableRefObject<HTMLDivElement>;
+    
+    useEffect(()=>{
+        const fetchCart = async() => {
+            return await http.post<Cart>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/fetch`,JSON.stringify({
+                email: session?.user?.email
+            }));
+        };
+
+        session && fetchCart().then((response)=>{
+            if(response.status >= 200 && response.status < 300){
+                updateCart(response.data);
+                let total = 0;
+                response.data.cartItems.map((item)=>total+item.price);
+                updateCartTotal(total);
+                setTabs([<Cart userEmail={session.user?.email}/>,...tabs]);
+            } else {
+                setTabs([<Cart />,...tabs]);
+            }
+            setLoading(false);
+        });
+
+        !session && setLoading(false);
+    },[http, session]);
+
+    const applyPromocode = async()=>{
+        setLoadingPromocode(true);
+        const response = await http.get<PromocodeType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/code=${promocode}`);
+        if(response.status >= 200 && response.status < 300 && response.data){
+            setDiscount((response.data.discountPercent*(cartTotal||0))/100);
+        } else {
+            promocodeError.current.innerHTML = response.data.error || response.statusText;
+        }
+        setLoadingPromocode(false);
+    };
+
+    if (loading || status === "loading"){
+        return <Loading />
+    }
+
+    if(!session){
+        redirect('/pages/auth/login');
+    }
+
     return (
         <Layout>
+            { !cart ? 
+                <h3 className="text-black dark:text-white text-lg">
+                    <i className="fa-regular fa-face-frown fa-xl text-orange-500 mr-3"></i>
+                    Cart is empty. Add some items to see them here
+                </h3>
+            :<>
             <title>Valhalla - Checkout</title>
             <div className="">
                 <div className="mb-4">
@@ -32,11 +100,7 @@ const Checkout: React.FC = () => {
                                     setShippingComplete(false);
                                     setCurrentTab(0)
                                     }} className="flex flex-row w-1/3">
-                                    <div style={{width:'91%'}} className={` ${currentTab === 0 ? 'bg-orange-500 border-l-orange-500' : 'bg-white dark:bg-slate-800 border-l-white dark:border-l-slate-800' } relative h-12 gap-x-2 flex flex-row items-center justify-center`}>
-                                        <div style={{borderTop:'24px solid transparent',borderBottom:'24px solid transparent', borderLeft:'24px solid'}} className="w-0 h-0 !border-l-inherit absolute -right-6"></div>
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="0.2" stroke="currentColor" style={{width:'74px'}} className={`-rotate-90 duration-500 text-zinc-800 -right-12 absolute dark:text-white`}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                        </svg>
+                                    <div style={{width:'100%'}} className={` ${currentTab === 0 ? 'bg-orange-500' : 'bg-white dark:bg-slate-800' } border-r border-r-black dark:border-r-white relative h-12 flex flex-row items-center justify-center`}>
                                         <div className=" flex flex-row gap-x-2">
                                             <div style={{borderRadius: '50%'}} className={`w-5 h-5 ${cartComplete ? 'bg-orange-500 border-1' : 'bg-transparent border-2'} flex flex-row items-center justify-center ${currentTab === 0 ? 'border-white' : 'border-gray-500 dark:border-white'} `}>
                                                 {cartComplete ? <i className="fa-solid fa-check fa-2xs text-white"></i> : null}
@@ -48,14 +112,8 @@ const Checkout: React.FC = () => {
                                 <div className="flex flex-row w-1/3">
                                     <button disabled={!cartComplete} onClick={()=>{
                                         setShippingComplete(false);
-                                        setCurrentTab(1)
-                                        }} style={{width:'91%'}} className={`${currentTab === 1 ? 'bg-orange-500 border-b-orange-500 border-l-orange-500' : 'bg-white border-b-white dark:bg-slate-800 dark:border-b-slate-800 border-l-white dark:border-l-slate-800'} relative w-full h-12 gap-x-2 flex flex-row items-center justify-center`}>
-                                        <div style={{borderWidth: '0px 24px 24px 0px', borderColor: 'transparent'}} className="w-0 h-0 -mt-6 rotate-180 !border-b-inherit absolute -left-6"></div>
-                                        <div style={{borderWidth: '0 0 24px 24px', borderColor: 'transparent'}} className="w-0 h-0 -mb-6 !border-b-inherit absolute -left-6"></div>
-                                        <div style={{borderTop:'24px solid transparent',borderBottom:'24px solid transparent', borderLeft:'24px solid'}} className="w-0 h-0 !border-l-inherit dark:!border-l-inherit absolute -right-6"></div>
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="0.2" stroke="currentColor" style={{width:'74px'}} className={`-rotate-90 duration-500 text-zinc-800 -right-12 absolute dark:text-white`}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                                        </svg>
+                                        setCurrentTab(1);
+                                        }} style={{width:'100%'}} className={`${currentTab === 1 ? 'bg-orange-500' : 'bg-white dark:bg-slate-800 '} border-r border-l border-r-black border-l-black dark:border-r-white dark:border-l-white relative w-full h-12 gap-x-2 flex flex-row items-center justify-center`}>
                                         <div className=" flex flex-row gap-x-2">
                                             <div style={{borderRadius: '50%'}} className={`w-5 h-5 ${shippingComplete ? 'bg-orange-500 border-1' : 'bg-transparent border-2'} flex flex-row items-center justify-center ${currentTab === 1 ? 'border-white' : 'border-gray-500 dark:border-white'}`}>
                                                 {shippingComplete ? <i className="fa-solid fa-check fa-2xs text-white"></i> : null}
@@ -65,9 +123,7 @@ const Checkout: React.FC = () => {
                                     </button>
                                 </div>
                                 <div className="flex flex-row w-1/3">
-                                    <button disabled={!shippingComplete} onClick={()=>setCurrentTab(2)}  className={`${currentTab === 2 ? 'bg-orange-500 border-b-orange-500' : 'bg-white border-b-white dark:bg-slate-800 dark:border-b-slate-800'} relative w-full h-12 gap-x-2 flex flex-row items-center justify-center`}>
-                                        <div style={{borderWidth: '0px 24px 24px 0px', borderColor: 'transparent'}} className="w-0 h-0 -mt-6 rotate-180 !border-b-inherit absolute -left-6"></div>
-                                        <div style={{borderWidth: '0 0 24px 24px', borderColor: 'transparent'}} className="w-0 h-0 -mb-6 !border-b-inherit absolute -left-6"></div>
+                                    <button disabled={!shippingComplete} onClick={()=>setCurrentTab(2)}  className={`${currentTab === 2 ? 'bg-orange-500' : 'bg-white dark:bg-slate-800'} border-l border-l-black dark:border-l-white relative w-full h-12 gap-x-2 flex flex-row items-center justify-center`}>
                                         <div className=" flex flex-row gap-x-2">
                                             <div style={{borderRadius: '50%'}} className={`w-5 h-5 border-2 ${currentTab === 2 ? 'border-white' : 'border-gray-500 dark:border-white'}`}></div>
                                             <p className={`${currentTab === 2 ? 'text-white font-bold' : 'text-gray-500 dark:text-white'}`}>PAYMENT</p>
@@ -113,28 +169,29 @@ const Checkout: React.FC = () => {
                     <div className="w-1/3 max-lg:w-full max-lg:order-2">
                         <Collapse title="PROMO CODE" className="bg-white dark:bg-transparent">
                             <div className="w-full">
-                                <input type="text" id="promo-code" name="promo-code" placeholder="Enter Promo Code" className="px-2 outline-0 w-full shadow-md shadow-zinc-600 dark:shadow-none rounded-md h-10 ring-1 dark:bg-neutral-700 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2" />
-                                <button className="text-white w-full p-2 mt-4 bg-orange-500 hover:bg-orange-400">Apply Code</button>
+                                <input type="text" onChange={(e)=>setPromocode(e.target.value)} value={promocode} id="promo-code" name="promo-code" placeholder="Enter Promo Code" className="px-2 outline-0 w-full shadow-md shadow-zinc-600 dark:shadow-none rounded-md h-10 ring-1 dark:bg-neutral-700 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2" />
+                                <div ref={promocodeError} className='text-red-500'></div>
+                                <button disabled={loadingPromocode} onClick={e=>applyPromocode()} type="button" className="text-white w-full p-2 mt-4 bg-orange-500 hover:bg-orange-400">Apply Code</button>
                             </div>
                         </Collapse>
                         <div className="bg-white dark:bg-transparent shadow-sm rounded-md shadow-zinc-700 dark:shadow-gray-200 p-4">
                             <h4 className="text-base text-black font-bold dark:text-white mb-4">ORDER SUMMARY</h4>
                             <div className="flex flex-row justify-between items-center mb-2">
                                 <p className="text-zinc-700 dark:text-gray-300 text-sm">Subtotal:</p>
-                                <p className="text-base text-black dark:text-white font-bold">$0.00</p>
+                                <p className="text-base text-black dark:text-white font-bold">{`${currency?.symbol}${useCurrentCurrency(cartTotal)}`}</p>
                             </div>
                             <div className="flex flex-row justify-between items-center mb-2">
                                 <p className="text-zinc-700 dark:text-gray-300 text-sm">Discount:</p>
-                                <p className="text-base text-black dark:text-white font-bold">-$0.00</p>
+                                <p className="text-base text-black dark:text-white font-bold">-{`${currency?.symbol}${useCurrentCurrency(discount)}`}</p>
                             </div>
                             <div className="flex flex-row justify-between items-center mb-2">
                                 <p className="text-zinc-700 dark:text-gray-300 text-sm">Shipping:</p>
-                                <p className="text-base text-black dark:text-white font-bold">{currentTab >= 1 ? 'FREE' : 'Calculating...'}</p>
+                                <p className="text-base text-black dark:text-white font-bold">{currentTab >= 1 ? (shippingFee > 0 ? shippingFee: 'FREE') : 'Calculating...'}</p>
                             </div>
                             <hr className="border-b border-b-gray-400"/>
                             <div className="flex flex-row justify-between items-center my-4">
                                 <p className="text-lg font-bold text-black dark:text-white">Estimated Total</p>
-                                <p className="text-lg font-bold text-black dark:text-white">$0.00</p>
+                                <p className="text-lg font-bold text-black dark:text-white">{currentTab == 0 ? 'Calculating...' : `${currency?.symbol}${useCurrentCurrency(parseFloat((cartTotal+shippingFee).toFixed(2)))}`}</p>
                             </div>
                             <hr className="border-b border-b-gray-400 mb-4"/>
                             <button onClick={()=>{
@@ -153,40 +210,82 @@ const Checkout: React.FC = () => {
                     </div>
                 </div>
             </div>
+            </>
+            }
         </Layout>
     );
 };
 
 interface CartProps {
-    final?: boolean
+    final?: boolean,
+    userEmail?: string | undefined | null
 }
 
-const Cart: React.FC<CartProps> = ({final=false}) => {
+const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
+    const http = FrontendServices.get<HttpService>('HttpService');
+    
+    const [loadingRemove,setLoadingRemove] = useState<boolean>(false);
+    const { cart, updateCart, updateCartSize} = useSharedState();
+
+    const handleRemoveCartItem = async(e: React.FormEvent<HTMLButtonElement>, cartItemId: string ) => {
+        e.preventDefault();
+        setLoadingRemove(true);
+        const response = await http.post<Cart>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/delete`,JSON.stringify({
+            userEmail: userEmail,
+            itemId: cartItemId
+        }));
+        if(response.status >= 200 && response.status <300 && response.data){
+            updateCart(response.data);
+            updateCartSize(response.data.cartItems.length);
+            setLoadingRemove(false); 
+        }
+        else if(response.status >= 200 && response.status <300 && !response.data) {
+            updateCart(null);
+            updateCartSize(0);
+            setLoadingRemove(false); 
+        }
+        else {
+            //
+        }
+    };
+
+    if(loadingRemove){
+        return <Loading />;
+    }
+
     return (
-    <div className="flex flex-col">
-        <div className="bg-white dark:bg-transparent shadow-sm rounded-md shadow-zinc-700 dark:shadow-gray-200 p-4">
-            <h3 className="text-base text-black dark:text-white mb-4">CART (1)</h3>
-            <hr className="border-b border-b-gray-400 mb-4"/>
-            <div className="flex flex-row gap-x-4">
-                <div className="max-lg:!w-20 max-lg:!h-20" style={{width:'120px', height:'120px'}}><img className={`w-full h-full`} src="/test.jpg"  alt={''}/></div>
-                <div>
-                    <h3 className="text-base text-black dark:text-white">Product Name</h3>
-                    {!final ? <p className="text-sm text-gray-700 dark:text-gray-300">In Stock</p> : null }
-                    <p className="text-lg text-gray-700 dark:text-gray-300 font-bold">Ksh 12,999</p>
-                    {final ? <p className="text-gray-700 dark:text-gray-300 text-base">Qty: 1</p> : null}
-                </div>
+    <>
+    {
+        <div className="flex flex-col">
+            <div className="bg-white dark:bg-transparent shadow-sm rounded-md shadow-zinc-700 dark:shadow-gray-200 p-4">
+                <h3 className="text-base text-black dark:text-white mb-4">{`CART(${cart && cart.cartItems.length ? cart.cartItems.length : 0})`}</h3>
+                <hr className="border-b border-b-gray-400 mb-4"/>
+                {cart && cart.cartItems.map((item)=>
+                    <div key={item._id}  className="flex flex-col pb-2 mb-3 border-b border-b-zinc-800 dark:border-b-gray-200">
+                        <div className="flex flex-row gap-x-4">
+                            <div className="max-lg:!w-20 max-lg:!h-20" style={{width:'130px', height:'130px'}}><img className={`w-full h-full object-cover`} src={`${item.images[0].link}`}  alt={`${item.name}`}/></div>
+                                <div>
+                                    <h3 className="text-base text-black dark:text-white">{item.name}</h3>
+                                    {!final ? <p className="text-md text-green-500">IN STOCK</p> : null }
+                                    <p className="text-lg text-gray-700 dark:text-gray-300 font-bold">{item.price}</p>
+                                    {final ? <p className="text-gray-700 dark:text-gray-300 text-base">Qty: {cart.cartItems.filter((c)=>c._id==item._id).length}</p> : null}
+                                </div>
+                            </div>
+                            {!final ? <div className="flex flex-row justify-between items-center mt-2 cart-controls">
+                                <button onClick={(e)=>handleRemoveCartItem(e, item._id)} className="text-white text-sm bg-orange-500 p-2 rounded-md md:hover:bg-orange-400 max-md:active:bg-orange-400"><i className="fa-regular fa-trash-can"></i> REMOVE
+                                </button>
+                                <div className="flex flex-row items-center">
+                                    <button className="bg-orange-500 text-white text-2xl px-2 shadow-sm shadow-zinc-700 rounded-md md:hover:bg-orange-400 max-md:active:bg-orange-400"> -</button>
+                                    <div className="w-10 text-center text-black dark:text-white">1</div>
+                                    <button className="bg-orange-500 text-white text-2xl px-2 shadow-sm shadow-zinc-700 rounded-md md:hover:bg-orange-400 max-md:active:bg-orange-400"> +</button>
+                                </div>
+                            </div> : null}
+                    </div>
+                )}
             </div>
-            {!final ? <div className="flex flex-row justify-between items-center mt-2 cart-controls">
-                <button className="text-white text-sm bg-orange-500 p-2 rounded-md md:hover:bg-orange-400 max-md:active:bg-orange-400"><i className="fa-regular fa-trash-can"></i> REMOVE
-                </button>
-                <div className="flex flex-row items-center">
-                    <button className="bg-orange-500 text-white text-2xl px-2 shadow-sm shadow-zinc-700 rounded-md md:hover:bg-orange-400 max-md:active:bg-orange-400"> -</button>
-                    <div className="w-10 text-center text-black dark:text-white">1</div>
-                    <button className="bg-orange-500 text-white text-2xl px-2 shadow-sm shadow-zinc-700 rounded-md md:hover:bg-orange-400 max-md:active:bg-orange-400"> +</button>
-                </div>
-            </div> : null}
         </div>
-    </div>
+    }
+    </>
     );
 };
 
@@ -198,8 +297,8 @@ interface shippingOption {
 const Shipping: React.FC = () => {
 
     const shippingOptions: shippingOption[] = [
-        {text: 'Standard Shipping - 3 Business Days', price: 'FREE'},
-        {text: 'Express Delivery - 1 to 2 Business Days', price: 'Ksh 500'}
+        {text: 'Standard Shipping - 3 Business Days', price: 0},
+        {text: 'Express Delivery - 1 to 2 Business Days', price: 500}
     ]
 
     return (

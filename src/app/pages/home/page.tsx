@@ -37,20 +37,23 @@ const AppHome: React.FC = ()=>{
         fetchCategories().then(response => {
             if (response.status >= 200 && response.status<=299 && response.data) {
                 setCategories(response.data.filter((category)=>category.name!='Electronics').sort((a,b)=>new Date(b.updated).getTime() - new Date(a.updated).getTime()));
-                setLoading(false);
-            } else {
-                //
-            }
-        });
-        fetchProducts().then(response => {
-            if (response.status >= 200 && response.status<=299 && response.data) {
-                setProducts(response.data.sort((a,b)=>new Date(b.updated).getTime() - new Date(a.updated).getTime()));
-                setLoading(false);
+                fetchProducts().then(response => {
+                    if (response.status >= 200 && response.status<=299 && response.data) {
+                        setProducts(response.data.sort((a,b)=>new Date(b.updated).getTime() - new Date(a.updated).getTime()));
+                        setLoading(false);
+                    } else {
+                        //
+                    }
+                });
             } else {
                 //
             }
         });
     },[http])
+
+    if(loading) {
+        return <Loading />;
+    }
 
     //Most recently 5 added products
     const featuredProducts: Card[] = products ? products.map((product)=>{
@@ -123,7 +126,7 @@ const AppHome: React.FC = ()=>{
 
     
     return <Layout>
-        {loading ? <Loading /> :
+        {
         <>
             <title>Valhalla - Electronics</title>
 
