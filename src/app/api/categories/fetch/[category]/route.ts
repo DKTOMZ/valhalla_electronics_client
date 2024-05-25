@@ -2,23 +2,21 @@ import Category from "@/lib/categorySchema";
 import { DbConnService } from "@/services/dbConnService";
 import {BackendServices} from "@/app/api/inversify.config";
 import { Category as categoryType } from "@/models/categories";
-import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
-import mongoose from "mongoose";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
 
-export async function POST(req: NextRequest) {
+export async function POST() {
 
     return new Response(JSON.stringify({error:'POST Method not supported'}),{status:405,headers:{
         'Content-Type':'application/json'
     }});
 }
 
-export async function GET(req: NextRequest,{params}:{params:{category:string}}) {
+export async function GET(req: NextRequest) {
 
-    const name = params['category'].replace('category=','');
+    const name = req.nextUrl.searchParams.get('category');
 
     if (!name) {
         return new Response(JSON.stringify({error:'Id is not provided'}),{ status: 409, headers: {
@@ -34,7 +32,7 @@ export async function GET(req: NextRequest,{params}:{params:{category:string}}) 
         const category = await Category.find<categoryType>({name:name});
 
         if(category.length === 0) {
-            return new Response(JSON.stringify({'error':'Category does not exist'}),{status:200,headers:{
+            return new Response(JSON.stringify({'error':'Category does not exist'}),{status:404,headers:{
                 'Content-Type':'application/json'
             }});
         }

@@ -59,6 +59,7 @@ const CarouselSlider: React.FC<CarouselProps> = ({images, timeout=5000, autoScro
       <div className="flex flex-row w-full h-full justify-center items-center mb-16 relative">
         <button title="slide left" className="p-1 absolute z-10 left-0 text-3xl bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 text-white" onClick={slideLeft}>{"<"}</button>
         {images.map((image,index)=>{
+          // eslint-disable-next-line @next/next/no-img-element
           return <img style={index === currentIndex ? {maxHeight:maxHeight}: {}} key={index} className={`dark:brightness-75 transition-opacity object-cover duration-1000 ${index === currentIndex ? 'opacity-100 w-full md:w-4/5 lg:w-3/5' : 'opacity-0 max-h-0 max-w-0 '}`} src={image.source} alt={image.label} />
         })}
         <button title="slide right" className="p-1 absolute right-0 text-3xl bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 text-white" onClick={slideRight}>{">"}</button>

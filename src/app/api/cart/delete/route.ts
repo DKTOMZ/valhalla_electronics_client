@@ -25,8 +25,14 @@ export async function POST(req: NextRequest) {
     let objectId: mongoose.Types.ObjectId ;
     const { userEmail, itemId }:{userEmail: string, itemId: string} = await req.json();
 
+    if (!userEmail) {
+        return new Response(JSON.stringify({error:'userEmail parameter is missing'}),{status:400,headers:{
+            'Content-Type':'application/json'
+        }})
+    }
+
     if (!itemId) {
-        return new Response(JSON.stringify({error:'id parameter is missing'}),{status:400,headers:{
+        return new Response(JSON.stringify({error:'itemId parameter is missing'}),{status:400,headers:{
             'Content-Type':'application/json'
         }})
     }
@@ -48,15 +54,6 @@ export async function POST(req: NextRequest) {
         await Cart.updateOne({email: userEmail}, {$pull : {cartItems : {_id:objectId.toString()}}, updated: new Date()});
 
         const updatedCart = await Cart.findOne<CartType>({email:userEmail});
-
-        if(updatedCart && updatedCart.cartItems.length == 0){
-            await Cart.deleteOne({email: userEmail});
-
-            return new Response(JSON.stringify(null),{status:200,headers:{
-                'Content-Type':'application/json'
-            }});
-
-        }
 
         return new Response(JSON.stringify(updatedCart),{status:200,headers:{
             'Content-Type':'application/json'

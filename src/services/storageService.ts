@@ -20,14 +20,14 @@ export class StorageService {
 
     setLocalObject = (key: string, value: any) => this.localStorage?.setItem(key, value);
 
-    setSessionObject = (key: string, value: any) => this.sessionStorage?.setItem(key,value);
+    //setSessionObject = (key: string, value: any) => this.sessionStorage?.setItem(key,value);
 
     getLocalObject = (key: string) => this.localStorage?.getItem(key);
 
-    getSessionObject = (key: string) => this.sessionStorage?.getItem(key);
+    //getSessionObject = (key: string) => this.sessionStorage?.getItem(key);
 
     removeLocalObject = (key: string) => this.localStorage?.removeItem(key);
 
-    removeSessionObject = (key: string) => this.sessionStorage?.removeItem(key);
+    //removeSessionObject = (key: string) => this.sessionStorage?.removeItem(key);
 
 }

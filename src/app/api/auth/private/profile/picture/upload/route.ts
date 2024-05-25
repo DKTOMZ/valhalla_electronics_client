@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         }
     });
 
-    var imageLink: {Key: string, link: string} = {
+    const imageLink: { Key: string, link: string } = {
         Key: '', link: ''
     };
 

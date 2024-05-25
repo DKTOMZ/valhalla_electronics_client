@@ -6,6 +6,8 @@ import { CurrencyRateType } from '@/models/currencyRate';
 import { PromocodeType } from '@/models/promocode';
 import { countryPhoneNumbers } from "@/utils/phoneNumbers";
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { Stripe, loadStripe } from '@stripe/stripe-js';
+import { ShippingRate } from '@/models/shippingRate';
 
 
 interface SharedState {
@@ -14,7 +16,9 @@ interface SharedState {
   cartSize: number;
   setCartSize: React.Dispatch<React.SetStateAction<number>>;
   currency: CurrenciesType | null;
+  // eslint-disable-next-line no-unused-vars
   setInitialCurrency: (newValue: CurrenciesType|null) => void;
+  // eslint-disable-next-line no-unused-vars
   updateCurrency: (newValue: CurrenciesType|null) => Promise<void>;
   currencies: CurrenciesType[];
   setCurrencies: React.Dispatch<React.SetStateAction<CurrenciesType[]>>;
@@ -30,6 +34,7 @@ interface SharedState {
   setCurrentCheckoutTab: React.Dispatch<React.SetStateAction<number>>;
   appliedPromocode: PromocodeType|undefined,
   setAppliedPromocode: React.Dispatch<React.SetStateAction<PromocodeType|undefined>>;
+  // eslint-disable-next-line no-unused-vars
   useCurrentCurrency: (value: number) => number;
   countryName: string;
   setCountryName: React.Dispatch<React.SetStateAction<string>>;
@@ -47,6 +52,12 @@ interface SharedState {
   setAddress: React.Dispatch<React.SetStateAction<string>>;
   postalCode: string;
   setPostalCode: React.Dispatch<React.SetStateAction<string>>;
+  shippingRates: ShippingRate[];
+  setShippingRates: React.Dispatch<React.SetStateAction<ShippingRate[]>>;
+  currentShipping: ShippingRate|null;
+  setCurrentShipping: React.Dispatch<React.SetStateAction<ShippingRate|null>>;
+  
+  /**Get Stripe Instance*/useStripe: () => Promise<Stripe|null>;
 }
 
 const SharedStateContext = createContext<SharedState | undefined>(undefined);
@@ -56,6 +67,7 @@ interface SharedStateProvider {
 }
 
 /** Provider to wrap the app to make app data available globally. */
+// eslint-disable-next-line no-redeclare
 export const SharedStateProvider: React.FC<SharedStateProvider> = ({ children }) => {
 
   const [cart, setCart] = useState<Cart|null>(null);
@@ -77,6 +89,15 @@ export const SharedStateProvider: React.FC<SharedStateProvider> = ({ children })
   const [address, setAddress] = useState<string>('');
   const [city, setCity] = useState<string>('');
   const [postalCode, setPostalCode] = useState<string>('');
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
+  const [currentShipping, setCurrentShipping] = useState<ShippingRate|null>(null);
+
+  const useStripe = async() => {
+    if(!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY){
+      return Promise.reject('MISSING NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
+    }
+    return await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+  };
 
   const setInitialCurrency = (newValue: CurrenciesType|null) => {
     setCurrency(newValue);
@@ -89,8 +110,7 @@ export const SharedStateProvider: React.FC<SharedStateProvider> = ({ children })
       TOKES && TOKES.length > 0 && setCurrencyRate(TOKES[0].rate);
       const TONEWVALUE = currencyRates.filter((rate)=>rate.from=='KES' && rate.to==newValue?.shortName);
       TONEWVALUE && TONEWVALUE.length > 0 && setCurrencyRate(TONEWVALUE[0].rate);
-    } else {
-    }
+    } else { /* empty */ }
   }
 
   const useCurrentCurrency = (value: number) => {
@@ -103,7 +123,7 @@ export const SharedStateProvider: React.FC<SharedStateProvider> = ({ children })
 
   return (
     <SharedStateContext.Provider value={{ cart, setCart, cartSize, setCartSize, currency, setInitialCurrency, updateCurrency, cartTotal, setCartTotal, shippingFee, setShippingFee, currencyRates, setCurrencyRates, currentCheckoutTab, setCurrentCheckoutTab, appliedPromocode, setAppliedPromocode, useCurrentCurrency, currencies, setCurrencies, categories, setCategories
-      , countryName, setCountryName, firstName, setFirstName, lastName, setLastName, phoneNumber, setPhoneNumber, phoneCode, setPhoneCode, address, setAddress, city, setCity, postalCode, setPostalCode
+      , countryName, setCountryName, firstName, setFirstName, lastName, setLastName, phoneNumber, setPhoneNumber, phoneCode, setPhoneCode, address, setAddress, city, setCity, postalCode, setPostalCode, useStripe, shippingRates, setShippingRates, currentShipping, setCurrentShipping
      }}>
       {children}
     </SharedStateContext.Provider>

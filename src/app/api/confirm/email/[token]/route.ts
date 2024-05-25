@@ -3,6 +3,7 @@ import appUser from "@/lib/userSchema";
 import {BackendServices} from "@/app/api/inversify.config";
 import { JWTService } from "@/services/jwtService";
 import { UserServer } from "@/models/User";
+import { NextRequest } from "next/server";
 
 
 //Services
@@ -15,9 +16,9 @@ export async function POST() {
     }});
 }
 
-export async  function GET({params}:{params:{token:string}}) {
+export async function GET(req: NextRequest ) {
 
-    const token = params['token'].replace('token=','');
+    const token = req.nextUrl.searchParams.get('token');
 
     if (!token) {
         return new Response(JSON.stringify({error:'Invalid Link'}),{status:404,headers:{

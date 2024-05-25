@@ -61,44 +61,51 @@ const Products: React.FC = () => {
         }
 
         category && fetchCategories().then((response1) => {
-            setAttributeOptions([attributeOptions[0], ...response1.data.properties]);
-            fetchProduct().then(response2 => {
-                if (response2.status >= 200 && response2.status<=299 && response2.data) {
-                    setProducts(response2.data);
-                    let maxPrice = 0;
-                    const allProductBrands = response2.data.map((product)=>{
-                        maxPrice = (Math.max(product.price,maxPrice));
-                        return product.brand.toLowerCase().trim()
-                    });
-
-                    let curr = 0, interval = Math.floor(maxPrice/4);
-
-                    let currPrices: FilterOptions[] = [];
-
-                    while(curr <= maxPrice){
-                        if(curr == maxPrice){
-                            currPrices.push({text:`Above ${curr}`,value:curr});
-                            break;
-                        } else {
-                            currPrices.push({text:`${curr}-${curr+interval}`,value:curr});
+            if(response1.status == 200){
+                setAttributeOptions([attributeOptions[0], ...response1.data.properties]);
+                fetchProduct().then(response2 => {
+                    if (response2.status >= 200 && response2.status<=299 && response2.data) {
+                        setProducts(response2.data);
+                        let maxPrice = 0;
+                        const allProductBrands = response2.data.map((product)=>{
+                            maxPrice = (Math.max(product.price,maxPrice));
+                            return product.brand.toLowerCase().trim()
+                        });
+    
+                        let curr = 0, interval = Math.floor(maxPrice/4);
+    
+                        let currPrices: FilterOptions[] = [];
+    
+                        while(curr <= maxPrice){
+                            if(curr == maxPrice){
+                                currPrices.push({text:`Above ${curr}`,value:curr});
+                                break;
+                            } else {
+                                currPrices.push({text:`${curr}-${curr+interval}`,value:curr});
+                            }
+                            curr += interval;
                         }
-                        curr += interval;
+    
+                        setPriceOptions([ priceOptions[0],...currPrices]);
+    
+                        let uniqueBrands: any = {};
+                        allProductBrands.forEach((brand)=>uniqueBrands[brand]=brand);
+                        const finalUnique = Object.keys(uniqueBrands).map((key)=>{return {text:key.toUpperCase()}})
+                        setBrandCheckBoxes([brandCheckboxes[0],...finalUnique]);
+                        
+                    } else {
+                        setProductsExist(false);
+                        //setLoading(false);
                     }
-
-                    setPriceOptions([ priceOptions[0],...currPrices]);
-
-                    let uniqueBrands: any = {};
-                    allProductBrands.forEach((brand)=>uniqueBrands[brand]=brand);
-                    const finalUnique = Object.keys(uniqueBrands).map((key)=>{return {text:key.toUpperCase()}})
-                    setBrandCheckBoxes([brandCheckboxes[0],...finalUnique]);
-                    
-                } else {
-                    setProductsExist(false);
-                    //setLoading(false);
-                }
+                    setLoading(false);
+                });        
+            } else {
+                setProductsExist(false);
                 setLoading(false);
-        })});
-    },[category])
+            }
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[ category, http])
 
     const [priceOptions, setPriceOptions] = useState<FilterOptions[]>([{text:'< Any price', default: true}]);
 
@@ -112,7 +119,8 @@ const Products: React.FC = () => {
             description: product.name,
             title: product.name,
             id: product._id,
-            price: product.price
+            price: product.price,
+            product: product
         }
         return listItem;
     }) : [{
@@ -130,8 +138,8 @@ const Products: React.FC = () => {
         return <Layout>
             <title>Valhalla - Products</title>
             <div className="mb-4">
-                <div className="h-1 w-24 bg-orange-400"></div>
-                <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-layer-group text-orange-400"></i></span> {category?.toUpperCase()}</h2>
+                <div className="h-1 w-24 bg-orange-500"></div>
+                <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-layer-group text-orange-500"></i></span> {category?.toUpperCase()}</h2>
             </div>
             <div className="text-black dark:text-white font-bold text-lg">No products found for this category</div>
         </Layout>
@@ -146,7 +154,7 @@ const Products: React.FC = () => {
 
                         <h3 className="text-base font-bold text-black dark:text-white">SORT</h3>
                         <div className="flex flex-col">
-                            <select className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white rounded-md py-2 max-md:hidden ">
+                            <select className="dark:bg-zinc-700 bg-slate-200 text-black dark:text-white rounded-md py-2 max-md:hidden ">
                                     <option value={'Price'}>Price</option>
                             </select>
                             <label>
@@ -215,7 +223,7 @@ const Products: React.FC = () => {
                                     <div ref={menuBarRef} className={`z-30 ${showOptions ? 'w-1/2 h-screen overflow-y-auto ease-in-out' : 'overflow-hidden w-0' } fixed transition-width duration-300 inset-0 rounded-md dark:bg-zinc-800 bg-gray-100 text-black dark:text-white`}>
                                         <h2 className="text-lg font-bold p-2"><i className="fa-solid fa-bars-staggered mr-2"></i>Sort & Filter</h2>
                                         <div className="flex flex-col p-2">
-                                            <select className="dark:bg-slate-700 bg-slate-200 text-black dark:text-white rounded-md py-2 max-md:hidden ">
+                                            <select className="dark:bg-zinc-700 bg-slate-200 text-black dark:text-white rounded-md py-2 max-md:hidden ">
                                                     <option value={'Price'}>Price</option>
                                             </select>
                                             <label>
@@ -230,7 +238,7 @@ const Products: React.FC = () => {
                                         
                                         <p className="text-base ml-2 font-bold text-black dark:text-white underline">Price</p>
                                         {priceOptions.map((option,index)=>{
-                                            return <div key={index} title={''} className={`md:dark:hover:bg-slate-700 max-md:dark:active:bg-slate-700 md:hover:bg-white max-md:active:bg-white text-base border-b ${showOptions ? 'opacity-100' : 'opacity-0'} transition-all duration-300 border-b-gray-400 font-bold p-2 w-full text-left `}>
+                                            return <div key={index} title={''} className={`md:dark:hover:bg-zinc-700 max-md:dark:active:bg-zinc-700 md:hover:bg-white max-md:active:bg-white text-base border-b ${showOptions ? 'opacity-100' : 'opacity-0'} transition-all duration-300 border-b-gray-400 font-bold p-2 w-full text-left `}>
                                             {option.default ? <button className="text-black dark:text-white inline ml-2 text-sm">{option.text}</button> :
                                             <label>
                                                 <input type="radio" value={option.text} />
@@ -242,7 +250,7 @@ const Products: React.FC = () => {
 
                                         <p className="text-base ml-2 mt-6 font-bold text-black dark:text-white underline">Attributes</p>
                                         {attributeOptions.map((option,index)=>{
-                                            return <div key={index} title={''} className={`md:dark:hover:bg-slate-700 max-md:dark:active:bg-slate-700 md:hover:bg-white max-md:active:bg-white text-base border-b ${showOptions ? 'opacity-100' : 'opacity-0'} transition-all duration-300 border-b-gray-400 font-bold p-2 w-full text-left `}>
+                                            return <div key={index} title={''} className={`md:dark:hover:bg-zinc-700 max-md:dark:active:bg-zinc-700 md:hover:bg-white max-md:active:bg-white text-base border-b ${showOptions ? 'opacity-100' : 'opacity-0'} transition-all duration-300 border-b-gray-400 font-bold p-2 w-full text-left `}>
                                             {option.value == 'default' ? <button className="text-black dark:text-white inline ml-2 text-sm">{option.name}</button> :
                                             <CollapseFilters title={option.name}>
                                                 {option.value.split(',').map((value,index)=>{
@@ -258,7 +266,7 @@ const Products: React.FC = () => {
 
                                         <p className="text-base ml-2 mt-6 font-bold text-black dark:text-white underline">Brand</p>
                                         {brandCheckboxes.map((option,index)=>{
-                                            return <div key={index} title={''} className={`md:dark:hover:bg-slate-700 max-md:dark:active:bg-slate-700 md:hover:bg-white max-md:active:bg-white text-base border-b ${showOptions ? 'opacity-100' : 'opacity-0'} transition-all duration-300 border-b-gray-400 font-bold p-2 w-full text-left `}>
+                                            return <div key={index} title={''} className={`md:dark:hover:bg-zinc-700 max-md:dark:active:bg-zinc-700 md:hover:bg-white max-md:active:bg-white text-base border-b ${showOptions ? 'opacity-100' : 'opacity-0'} transition-all duration-300 border-b-gray-400 font-bold p-2 w-full text-left `}>
                                             {option.default ? <button className="text-black dark:text-white inline ml-2 text-sm">{option.text}</button> :
                                             <label>
                                                 <input type="checkbox" value={option.text} />
@@ -273,7 +281,7 @@ const Products: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <CardGrid naviagteTo="/pages/product/" items={items} section={SectionEnum.PRODUCTS} paginate pageLength={12}/>
+                        <CardGrid navigateTo="/pages/product/" items={items} section={SectionEnum.PRODUCTS} paginate pageLength={12}/>
                     </div>
                 </div>
             </div>

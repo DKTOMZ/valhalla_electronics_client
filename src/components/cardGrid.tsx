@@ -1,75 +1,119 @@
+'use client'
 import { Card } from "@/models/card";
 import { SectionEnum } from "@/models/sectionEnum";
 import "@/app/globals.css";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSharedState } from "@/app/contexts/context";
+import { useSession } from "next-auth/react";
+import Loading from "./loading";
+import { Product } from "@/models/products";
+import { useRouter } from "next/navigation";
+import { HttpService } from "@/services/httpService";
+import { FrontendServices } from "@/lib/inversify.config";
+import { Cart } from "@/models/cart";
 
 interface CardListProps {
     items: Card[],
     section?: SectionEnum,
     paginate?: boolean,
     pageLength?: number,
-    naviagteTo: string,
+    navigateTo: string,
 }
 
 /** Card Grid component */
-export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,pageLength=10,naviagteTo}) => {
+export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,pageLength=10,navigateTo}) => {
 
     const pages = Math.ceil(items.length/pageLength);
 
+    const http = FrontendServices.get<HttpService>('HttpService');
     const [currentPage,setCurrentPage] = useState(1);
     const [minPage, setMinPage] = useState(1);
     const [maxPage,setMaxPage] = useState(pages);
+    const [saving, setSaving] = useState(false);
     const { currency, useCurrentCurrency } = useSharedState();
-
+    const { data: session , status } = useSession();
+    const { cart, setCart, setCartSize } = useSharedState();
+    const router = useRouter();
+ 
     const pageElements = [];
 
     if (paginate) {
-        
         for (let i = minPage; i <= maxPage; i++) {
             pageElements.push(<button onClick={()=>setCurrentPage(i)} style={{borderRadius: '50%'}} key={i} className={`flex-shrink-0 text-lg ${currentPage === i ? 'bg-orange-600 text-white' : 'text-black dark:text-white'} flex flex-row items-center justify-center h-8 w-8`}>{i}</button>)
         }
-    
     }
 
+    const checkProductIsInCart = (id: string) => {
+        if(cart){
+            return cart.cartItems.filter((item)=>item._id == id).length > 0;
+        }else {
+            return false;
+        }
+    }
+
+    const addToCart = async(item: Product|undefined) => {
+        if(!session){
+            router.push('/pages/auth/login');
+        } else {
+            setSaving(true);
+            if(item){
+                item.quantityInCart = 1;
+                const response = await http.post<{size:number, cart: Cart}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/save`,
+                JSON.stringify({
+                    email: session?.user?.email,
+                    cartItem: item
+                })
+            );
+            if(response.status >= 200 && response.status < 300) {
+                setCart(response.data.cart);
+                setCartSize(response.data.size);
+            } else {
+                item.quantityInCart = 0;
+            }
+            }
+            setSaving(false);
+        }
+    };
+
     useEffect(()=>{window.scrollTo(0,0);},[currentPage]);
+
+    if(!session && !cart && status === 'loading'){
+        return <Loading screen={false}/>;
+    }
 
     return <div> 
         <div className="grid mb-8 grid-flow-row gap-x-4 card-grid max-sm:hidden text-neutral-600 sm:grid-cols-2 md:grid-cols-3">
             {paginate ? items.filter((_item,index)=>(index >= (currentPage-1) * pageLength && index < currentPage * pageLength)).map((item,index)=>{
-                return <div key={index} className="my-2 rounded dark:shadow-gray-500 md:hover:-translate-y-1 shadow-md shadow-zinc-700 bg-white dark:bg-slate-800 duration-500 md:dark:hover:shadow-orange-400 max-md:dark:active:shadow-orange-400 md:dark:hover:shadow-md max-md:dark:active:shadow-md md:hover:shadow-md max-md:active:shadow-md md:hover:shadow-orange-600 max-md:active:shadow-orange-600"
+                return <div key={index} className="my-2 rounded dark:shadow-gray-500 md:hover:-translate-y-1 shadow-md shadow-zinc-700 bg-white dark:bg-zinc-700 duration-500 md:dark:hover:shadow-orange-400 max-md:dark:active:shadow-orange-400 md:dark:hover:shadow-md max-md:dark:active:shadow-md md:hover:shadow-md max-md:active:shadow-md md:hover:shadow-orange-600 max-md:active:shadow-orange-600"
                 >
                         <figure>
-                            <Link href={`${naviagteTo}${section === SectionEnum.CATEGORIES ? '?category='+encodeURIComponent(item.title): '?id='+encodeURIComponent(item.id)}`}>
+                            <Link href={`${navigateTo}${section === SectionEnum.CATEGORIES ? '?category='+encodeURIComponent(item.title): '?id='+encodeURIComponent(item.id)}`}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img alt={item.title} src={item.image} className="rounded-t h-64 w-full object-cover dark:border-b-0 border-b border-b-gray-600" />
                             </Link>
                             {section !== SectionEnum.CATEGORIES ?
                             <figcaption className="p-4">
                                 {section === SectionEnum.FLASH_SALES ? 
-                                    <div className="flex flex-row items-start justify-between">
+                                    <div className="flex flex-row items-center justify-between">
                                         <div>
                                             <div className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{item.oldPrice ? Math.round((((item.price||0)-(item.oldPrice))/(item.oldPrice))*100)+"% off": null}</div>
                                             <p className="ml-1 text-orange-400">Deal</p>
                                         </div>
-                                        <div className="flex flex-row items-start gap-x-3">
-                                            <button title="add to favorites" className="text-orange-400 md:hover:text-gray-500 md:active:text-gray-500 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200"><i className="fa-solid fa-heart fa-lg"></i></button>
-                                            <button title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>
-                                        </div>
+                                        {status == 'authenticated' ? 
+                                            !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                                        : null}
                                     </div>
                                 : null}
-                                {section === SectionEnum.PRODUCTS || section === SectionEnum.FEATURED ? 
-                                <div className="flex flex-row items-start justify-between">
-                                    <div className="flex flex-row items-start gap-x-3">
-                                        <button title="add to favorites" className="text-orange-400 md:hover:text-gray-500 max-md:active:text-gray-500 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200"><i className="fa-solid fa-heart fa-lg"></i></button>
-                                        <button title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>
-                                    </div>
-                                </div>
+                                {status == 'authenticated' && (section === SectionEnum.PRODUCTS || section === SectionEnum.FEATURED) ? 
+                                    !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
                                 : null}
                                 <div className="flex flex-row items-center gap-x-2">
                                     <p className="text-lg text-gray-800 dark:text-gray-100">
+                                        {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                                         {(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}
                                     </p>
+                                    {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                                     {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
                                 </div>
                                 <small className="text-sm text-black dark:text-white">
@@ -82,38 +126,36 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                         </figure>
                 </div>
             }) : items.map((item,index)=>
-                <div key={index} className="my-2 rounded dark:shadow-gray-500 md:hover:-translate-y-1 shadow-md shadow-zinc-700 bg-white dark:bg-slate-800 duration-500 md:dark:hover:shadow-orange-400 max-md:dark:active:shadow-orange-400 md:dark:hover:shadow-md max-md:dark:active:shadow-md md:hover:shadow-md max-md:active:shadow-md md:hover:shadow-orange-600 max-md:active:shadow-orange-600"
+                <div key={index} className="my-2 rounded dark:shadow-gray-500 md:hover:-translate-y-1 shadow-md shadow-zinc-700 bg-white dark:bg-zinc-700 duration-500 md:dark:hover:shadow-orange-400 max-md:dark:active:shadow-orange-400 md:dark:hover:shadow-md max-md:dark:active:shadow-md md:hover:shadow-md max-md:active:shadow-md md:hover:shadow-orange-600 max-md:active:shadow-orange-600"
                 >
                         <figure>
-                            <Link  href={`${naviagteTo}${section === SectionEnum.CATEGORIES ? '?category='+encodeURIComponent(item.title): '?id='+encodeURIComponent(item.id)}`}>
+                            <Link  href={`${navigateTo}${section === SectionEnum.CATEGORIES ? '?category='+encodeURIComponent(item.title): '?id='+encodeURIComponent(item.id)}`}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img alt={item.title} src={item.image} className="rounded-t h-56 xl:h-64 w-full object-cover dark:border-b-0 border-b border-b-gray-600" />
                             </Link>
                             {section !== SectionEnum.CATEGORIES ?
                             <figcaption className="p-4">
                                 {section === SectionEnum.FLASH_SALES ? 
-                                    <div className="flex flex-row items-start justify-between">
+                                    <div className="flex flex-row items-center justify-between">
                                         <div>
                                             <div className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{item.oldPrice ? Math.round((((item.price||0)-(item.oldPrice))/(item.oldPrice))*100)+"% off": null}</div>
                                             <p className="ml-1 text-orange-400">Deal</p>
                                         </div>
-                                        <div className="flex flex-row items-start gap-x-3">
-                                            <button title="add to favorites" className="text-orange-400 md:hover:text-gray-500 md:active:text-gray-500 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200"><i className="fa-solid fa-heart fa-lg"></i></button>
-                                            <button title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>
-                                        </div>
+                                        {status == 'authenticated' ? 
+                                            !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"> <i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                                        : null
+                                        }
                                     </div>
                                 : null}
-                                {section === SectionEnum.PRODUCTS ? 
-                                <div className="flex flex-row items-start justify-between">
-                                    <div className="flex flex-row items-start gap-x-3">
-                                        <button title="add to favorites" className="text-orange-400 md:hover:text-gray-500 max-md:active:text-gray-500 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200"><i className="fa-solid fa-heart fa-lg"></i></button>
-                                        <button title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>
-                                    </div>
-                                </div>
+                                {section === SectionEnum.PRODUCTS && status == 'authenticated' ? 
+                                    !checkProductIsInCart(item.id) ?  <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>: <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
                                 : null}
                                 <div className="flex flex-row items-center gap-x-2">
                                     <p className="text-lg text-gray-800 dark:text-gray-100">
+                                        {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                                         {(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}
                                     </p>
+                                    {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                                     {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
                                 </div>
                                 <small className="text-sm text-black dark:text-white">
@@ -128,8 +170,9 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
             )}
         </div>
         {paginate ? items.filter((_item,index)=>(index >= (currentPage-1) * pageLength && index < currentPage * pageLength)).map((item,index)=>{
-            return  <Link href={`${naviagteTo}${section === SectionEnum.CATEGORIES ? '?category='+encodeURIComponent(item.title): '?id='+encodeURIComponent(item.id)}`} key={index} className="sm:hidden mx-1 flex flex-row mb-4 gap-x-4 rounded-md shadow-sm shadow-zinc-700 bg-white dark:bg-slate-800 dark:shadow-slate-300 md:dark:hover:shadow-orange-400 max-md:dark:active:shadow-orange-400 md:dark:hover:shadow-md max-md:dark:active:shadow-md md:hover:shadow-md max-md:active:shadow-md md:hover:shadow-orange-600 max-md:active:shadow-orange-600">
+            return  <Link href={`${navigateTo}${section === SectionEnum.CATEGORIES ? '?category='+encodeURIComponent(item.title): '?id='+encodeURIComponent(item.id)}`} key={index} className="sm:hidden mx-1 flex flex-row mb-4 gap-x-4 rounded-md shadow-sm shadow-zinc-700 bg-white dark:bg-zinc-700 dark:shadow-slate-300 md:dark:hover:shadow-orange-400 max-md:dark:active:shadow-orange-400 md:dark:hover:shadow-md max-md:dark:active:shadow-md md:hover:shadow-md max-md:active:shadow-md md:hover:shadow-orange-600 max-md:active:shadow-orange-600">
             <div className="w-3/12 hoz-card2 h-32 flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img alt={item.title} src={item.image} className="rounded-t h-full w-full object-cover dark:border-l-0 border-l border-b-gray-600" />
             </div>
             <div className="text-black dark:text-white overflow-hidden">
@@ -137,23 +180,25 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                 {section !== SectionEnum.CATEGORIES ?
                 <>
                     <div className="flex flex-row gap-x-3 items-center">
+                        {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                         <p className="font-bold">{(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}</p>
+                        {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                         {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
                     </div>
 
                     {section === SectionEnum.FLASH_SALES ? <p className="ml-1 text-orange-400">Deal</p> : null}
 
-                    <div className="flex flex-row items-start gap-x-3">
-                        <button title="add to favorites" className="text-orange-400 md:hover:text-gray-500 max-md:active:text-gray-500 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200"><i className="fa-solid fa-heart fa-lg"></i></button>
-                        <button title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>
-                    </div>
+                    {status == 'authenticated' ?
+                        !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                    : null}
                 </>
                 : null}
             </div>
         </Link>
         }) : items.map((item,index)=>{
-            return  <Link href={`${naviagteTo}${section === SectionEnum.CATEGORIES ? '?category='+encodeURIComponent(item.title): '?id='+encodeURIComponent(item.id)}`} key={index} className="sm:hidden mx-1 flex flex-row mb-4 gap-x-4 rounded-md shadow-sm shadow-zinc-700 bg-white dark:bg-slate-800 dark:shadow-slate-300 md:dark:hover:shadow-orange-400 max-md:dark:active:shadow-orange-400 md:dark:hover:shadow-md max-md:dark:active:shadow-md md:hover:shadow-md max-md:active:shadow-md md:hover:shadow-orange-600 max-md:active:shadow-orange-600">
+            return  <Link href={`${navigateTo}${section === SectionEnum.CATEGORIES ? '?category='+encodeURIComponent(item.title): '?id='+encodeURIComponent(item.id)}`} key={index} className="sm:hidden mx-1 flex flex-row mb-4 gap-x-4 rounded-md shadow-sm shadow-zinc-700 bg-white dark:bg-zinc-700 dark:shadow-slate-300 md:dark:hover:shadow-orange-400 max-md:dark:active:shadow-orange-400 md:dark:hover:shadow-md max-md:dark:active:shadow-md md:hover:shadow-md max-md:active:shadow-md md:hover:shadow-orange-600 max-md:active:shadow-orange-600">
             <div className="w-3/12 hoz-card2 h-32 flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img alt={item.title} src={item.image} className="rounded-t h-full w-full object-cover dark:border-l-0 border-l border-b-gray-600" />
             </div>
             <div className="text-black dark:text-white overflow-hidden">
@@ -161,16 +206,17 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                 {section !== SectionEnum.CATEGORIES ?
                 <>
                     <div className="flex flex-row gap-x-3 items-center">
+                        {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                         <p className="font-bold">{(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}</p>
+                        {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                         {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
                     </div>
 
                     {section === SectionEnum.FLASH_SALES ? <p className="ml-1 text-orange-400">Deal</p> : null}
 
-                    <div className="flex flex-row items-start gap-x-3">
-                        <button title="add to favorites" className="text-orange-400 md:hover:text-gray-500 max-md:active:text-gray-500 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200"><i className="fa-solid fa-heart fa-lg"></i></button>
-                        <button title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>
-                    </div>
+                    {status == 'authenticated' ? 
+                        !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>: <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                    : null}
                 </>
                 : null}
             </div>
@@ -198,7 +244,7 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                 if(currentPage+1 > maxPage && maxPage+1 <= pages) {
                     setMaxPage(maxPage+1);
                     setMinPage(minPage+1);
-                }
+                } 
                 currentPage+1 <= pages ? setCurrentPage(currentPage+1) : null
                 }} disabled={currentPage===pages}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3.0" stroke="currentColor" className={`transition-all -rotate-90 w-5 h-5 ${currentPage === pages ? 'dark:text-gray-400 text-zinc-400' : 'dark:text-white text-zinc-800'}`}>

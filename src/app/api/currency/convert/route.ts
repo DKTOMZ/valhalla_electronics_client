@@ -1,7 +1,6 @@
 import { CurrencyConvert } from "@/models/currencyConvert";
 import axios from "axios";
 import { NextRequest } from "next/server";
-import { json } from "stream/consumers";
 
 export async function POST(req: NextRequest) {
 
@@ -55,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     return new Response(JSON.stringify({error:'GET Method not supported'}),{status:405,headers:{
         'Content-Type':'application/json'
     }});

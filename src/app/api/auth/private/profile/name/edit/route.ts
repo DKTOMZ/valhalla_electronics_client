@@ -2,7 +2,6 @@ import {BackendServices} from "@/app/api/inversify.config";
 import appUser from "@/lib/userSchema";
 import { UserServer } from "@/models/User";
 import { DbConnService } from "@/services/dbConnService";
-import { PutObjectCommand, S3 } from "@aws-sdk/client-s3";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
 

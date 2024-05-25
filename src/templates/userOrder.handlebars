@@ -1,0 +1,60 @@
+<div style="font-size: medium">
+    <img src="https://www.dropbox.com/scl/fi/gn5ai3y8pjzw4jvszvvxp/valhalla_email_logo.jpg?rlkey=4v020ehqywa31h4yr0h6x0puj&raw=1" height="110" width="100" alt="logo"/>
+    <h1>Order Confirmed</h1>
+    <p style="margin-bottom: 40px;">Hi, {{customerName}}. Thank you for shopping with us. Please find your order details below. You will reveive an email when your order is dispatched.</p>
+    <p style="margin-bottom: 40px;">Feel free to <a style="color: #FF6600" href="mailto: {{siteEmail}}">contact us</a> asap, if you need to make changes to your order.</p>
+    <p style="margin-bottom: 40px;">We ship all items as soon as they're ready, so there's a chance you may receive more than one shipment.</p>
+    <p style="margin-bottom: 40px;">Remember to save this email until you've received everything in your order.</p>
+    <div><strong>Order Reference: </strong><p style="color: #414141; font-size:14px;">{{orderId}}</p></div>
+    <br/>
+    <p><strong>Shipping to:</strong></p>
+    <p style="margin: 0; color: #414141; font-size:14px;">{{customerName}}</p>
+    <p style="margin: 0; color: #414141; font-size:14px;">{{customerAddress}}</p>
+    <p style="margin: 0; color: #414141; font-size:14px;">{{customerCity}}</p>
+    <p style="margin: 0; color: #414141; font-size:14px;">{{customerPostalCode}}</p>
+    <p style="margin: 0; color: #414141; font-size:14px;">{{customerCountry}}</p>
+    <p style="margin: 0; color: #414141; font-size:14px;">{{customerPhone}}</p>
+    <br/>
+    <div class="order-details">
+        <p><strong>Your order:</strong></p>
+        <table cellpadding="2" border="0" width="100%" cellspacing="0">
+            <thead>
+                <tr>
+                    <th colspan="2" style="font-size: 14px; line-height:16px;padding:10px 0 10px 5px; color: #414141" align="left">
+                        Product
+                    </th>
+                    <th style="font-size: 14px; line-height:16px;padding:10px 0 10px 5px; color: #414141" align="right">
+                        Price/Qty
+                    </th>
+                    <th style="font-size: 14px; line-height:16px;padding:10px 0 10px 5px; color: #414141" align="right">
+                        Qty
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each cartItems}}
+                    <tr style="font-size: 14px;">
+                        <td style="line-height:16px" valign="top">
+                            <img src="{{this.image}}" class="text-orange-500" alt=`{{this.name}} style="object-fit:cover" width="60px" height="60px"/>
+                        </td>
+                        <td style="line-height:16px" valign="top">
+                            <a href="{{this.productUrl}}" target="_blank" class="text-orange-500" style="text-decoration:none">
+                                {{this.name}}
+                            </a>                                                                                                                                                                                                                 
+                        </td>
+                        <td style="line-height:16px;" valign="top" align="right">{{this.totalPrice}}</td>
+                        <td style="line-height:16px;" valign="top" align="right">{{this.quantity}}</td>
+                    </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        <p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Sub-Total: {{currency}} {{subTotal}}</p>
+        <p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Shipping: {{shipping}}</p>
+        {{#if promocode}}
+            <p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Applied Promocode: {{promocode}}</p>
+            <p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Promocode Discount: {{currency}} {{discount}}</p>
+        {{else}}
+        {{/if}}
+        <p style="padding: 0 5px; color: #414141; font-size: 16px; font-weight: bold">TOTAL: {{currency}} {{total}}</p>
+    </div>
+</div>

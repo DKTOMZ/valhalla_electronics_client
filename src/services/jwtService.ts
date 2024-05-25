@@ -12,7 +12,7 @@ import jwt, {Secret} from 'jsonwebtoken';
 @injectable()
 export class JWTService {
     private devLogger: LoggerService;
-    private appSecret: Secret
+    private readonly appSecret: Secret
     constructor() {
         this.devLogger = FrontendServices.get<LoggerService>('DevLoggerService');
         if(!process.env.NEXTAUTH_SECRET){
@@ -41,7 +41,7 @@ export class JWTService {
 
     verify = (token: string) => {
 
-        return new Promise<string>((resolve, reject)=> {
+        return new Promise<string>((resolve)=> {
             jwt.verify(token, this.appSecret, (error, decoded) => {
                 if (error) {
                     throw new Error(JSON.stringify(error));

@@ -14,7 +14,6 @@ import { HttpServiceResponse } from "@/models/httpServiceResponse";
 import { GenericResponse } from "@/models/genericResponse";
 import Modal from "@/components/modal";
 import { profilePictureResponse } from "@/models/profilePictureResponse";
-import { CurrenciesType } from "@/models/currencies";
 import { useSharedState } from "@/app/contexts/context";
 import { StorageService } from "@/services/storageService";
 
@@ -22,9 +21,8 @@ const User: React.FC = () => {
     
     const http = FrontendServices.get<HttpService>('HttpService');
     const validationService = FrontendServices.get<ValidationService>('ValidationService');
-    const storage = FrontendServices.get<StorageService>('StorageService');
-
-    //State variables
+    FrontendServices.get<StorageService>('StorageService');
+//State variables
     const [newPassword,setNewPassword] = useState('');
     const [currentPassword,setCurrentPassword] = useState('');
     const [newConfirmPassword,setNewConfirmPassword] = useState('');
@@ -32,12 +30,11 @@ const User: React.FC = () => {
     const [currentPasswordVisible,setCurrentPasswordVisible] = useState(false);
     const [newConfirmPasswordVisible,setNewConfirmPasswordVisible] = useState(false);
     const [loadingSubmit, setLoadingSubmit] = useState(false);
-    const [loadingSubmitName, setLoadingSubmitName] = useState(false);
+    const [loadingSubmitName] = useState(false);
     const [changePasswordSuccess,setChangePasswordSuccess] = useState(false);
     const [uploading,setUploading] = useState(false);
-    const [loading,setLoading] = useState(true);
     const [name,setName] = useState('');
-    const { updateCurrency, setInitialCurrency, currencies, setCurrencies, currency } = useSharedState();
+    const { updateCurrency, currencies, currency } = useSharedState();
 
     //Element refs
     const currentPasswordElement = useRef<HTMLInputElement>(null);
@@ -50,28 +47,6 @@ const User: React.FC = () => {
     const imageField = useRef<HTMLInputElement>() as MutableRefObject<HTMLInputElement>;
     const saveImageError = useRef<HTMLInputElement>() as MutableRefObject<HTMLInputElement>;
     const updateNameError = useRef<HTMLInputElement>() as MutableRefObject<HTMLInputElement>;
-
-    useEffect(()=>{
-        const fetchCurrencies = async() => {
-            const response: HttpServiceResponse<CurrenciesType[]> = await http.get(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencies/fetch`);
-
-            if (response.status >= 200 && response.status<=299 && response.data) {
-                setCurrencies([...response.data]);
-                setInitialCurrency(response.data.filter((item)=>item.shortName=='KES')[0]);
-            } else {
-                //
-            }
-        }
-
-        if(!currencies){
-            fetchCurrencies();
-        } else {
-            if(currency){ 
-                setInitialCurrency(currencies.filter((currency)=>currency.shortName=='KES')[0]);
-            }
-        }
-        setLoading(false);
-    },[http,storage])
 
     const {data: session, status, update} = useSession();
 
@@ -116,7 +91,6 @@ const User: React.FC = () => {
             } else {
                 saveImageError.current.innerHTML = response.data.error ?? response.statusText;
             }
-            console.log(currencies);
             setUploading(false);
         }
 
@@ -176,7 +150,7 @@ const User: React.FC = () => {
 
     return (
         <>
-        {status === 'loading' || loading ? <Loading /> :
+        {status === 'loading' ? <Loading /> :
         status === 'authenticated' ?
         <Layout>
             { changePasswordSuccess ? <Modal title={'Success!'} body={'Password changed successfully'} 
@@ -212,10 +186,12 @@ const User: React.FC = () => {
                                     <input ref={imageField} style={{borderRadius: 'inherit'}} multiple={false} accept="image/png, image/jpeg, .jpeg, .png" type="file" className="hidden h-full w-full" onChange={(e)=>{
                                         uploadImage(e.target.files?.item(0));
                                     }}/>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img className="object-fill h-full w-full" style={{borderRadius: 'inherit'}} src={`${session?.user?.image || '/no_profile_pic.jpg'}`}  alt={''}/>
                                 </label>
                             </div>    
                         :
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img className="border-orange-400 border-2 m-auto object-fill" style={{borderRadius: '50%'}} src={`${session?.user?.image || '/no_profile_pic.jpg'}`} height={150} width={150} alt={''}/>
                         }
                         <div ref={saveImageError} className='text-red-500 text-center'></div>
@@ -235,14 +211,17 @@ const User: React.FC = () => {
                                 <FormSubmitButton text='Update Name' disabled={loadingSubmitName} callback={async()=>handleUpdateName()}/>
                             </form>
                         </Collapse>
+                        {currencies.length > 0 ? 
                         <Collapse title="Update Currency" className="md:hidden">
-                                <select defaultValue={currencies.filter((item)=>item.shortName=='KES').length > 0 ? currencies.filter((item)=>item.shortName=='KES')[0].shortName : 'KES'}
-                                onChange={(e)=>updateCurrency(currencies.filter((item)=>item.shortName==e.target.value)[0])} title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden">
+                                <select defaultValue={currency?.shortName || currencies.filter((item)=>item.shortName=='KES')[0].shortName}
+                                onChange={(e)=>updateCurrency(currencies.filter((item)=>item.shortName==e.target.value)[0])} title="Currencies" className="dark:bg-zinc-700 bg-slate-200 text-black dark:text-white p-2 rounded-md w-full">
                                 {currencies.map((currency)=>{
                                     return <option key={currency.symbol} value={currency.shortName}>{currency.shortName}</option>
                                 })}
                                 </select>
                         </Collapse>
+                        : null
+                        }
                     {/* eslint-disable-next-line no-prototype-builtins */}
                         {session && !session.user?.hasOwnProperty('thirdparty')
                         ?

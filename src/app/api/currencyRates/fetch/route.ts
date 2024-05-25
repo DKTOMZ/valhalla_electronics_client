@@ -1,7 +1,6 @@
 import { DbConnService } from "@/services/dbConnService";
 import {BackendServices} from "@/app/api/inversify.config";
 import { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 import CurrencyRates from "@/lib/currencyRatesSchema";
 import { CurrencyRateType } from "@/models/currencyRate";
 
@@ -29,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
 
     await dbConnService.mongooseConnect().catch(err => new Response(JSON.stringify({error:err}),{status:503,headers:{
         'Content-Type':'application/json'

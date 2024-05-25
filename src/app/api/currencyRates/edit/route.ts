@@ -3,7 +3,6 @@ import {BackendServices} from "@/app/api/inversify.config";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
 import CurrencyRates from "@/lib/currencyRatesSchema";
-import { CurrencyRateType } from "@/models/currencyRate";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');

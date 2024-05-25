@@ -1,9 +1,9 @@
 import { DbConnService } from "@/services/dbConnService";
 import {BackendServices} from "@/app/api/inversify.config";
-import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import Favorites from "@/lib/favoritesSchema";
-import { FavoritesType } from "@/models/favorites";
+import { NextRequest } from "next/server";
+import Cart from "@/lib/cartSchema";
+import { Cart as CartType } from "@/models/cart";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
@@ -20,13 +20,39 @@ export async function POST(req: NextRequest) {
             'Content-Type':'application/json'
         }})
     }
+    
+    const { userEmail }:{userEmail: string} = await req.json();
 
-    return new Response(JSON.stringify({error:'POST Method not supported'}),{status:405,headers:{
+    if (!userEmail) {
+        return new Response(JSON.stringify({error:'userEmail parameter is missing'}),{status:400,headers:{
+            'Content-Type':'application/json'
+        }})
+    }
+
+    await dbConnService.mongooseConnect().catch(err => new Response(JSON.stringify({error:err}),{status:503,headers:{
         'Content-Type':'application/json'
-    }});
+    }}));
+
+    try {
+
+        await Cart.updateOne({email: userEmail}, {
+            cartItems: []
+        });
+
+        const updatedCart = await Cart.findOne<CartType>({email:userEmail});
+
+        return new Response(JSON.stringify(updatedCart),{status:200,headers:{
+            'Content-Type':'application/json'
+        }});
+    } catch (error:any) {
+        return new Response(JSON.stringify({error:error.message}), { status: 503, headers: {
+            'Content-Type':'application/json'
+        }})
+    }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req:NextRequest) {
+
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
         throw new Error('Missing NEXT_PUBLIC_COOKIE_NAME property in env file');
     }
@@ -39,19 +65,8 @@ export async function GET(req: NextRequest) {
         }})
     }
 
-    await dbConnService.mongooseConnect().catch(err => new Response(JSON.stringify({error:err}),{status:503,headers:{
+    return new Response(JSON.stringify({error:'GET Method not supported'}),{status:405,headers:{
         'Content-Type':'application/json'
-    }}));
-
-    try {
-        const favorites = await Favorites.find<FavoritesType>();
-
-        return new Response(JSON.stringify(favorites),{status:200,headers:{
-            'Content-Type':'application/json'
-        }});
-    } catch (error:any) {
-        return new Response(JSON.stringify({error:error.message}), { status: 503, headers: {
-            'Content-Type':'application/json'
-        }})
-    }
+    }});
+    
 }

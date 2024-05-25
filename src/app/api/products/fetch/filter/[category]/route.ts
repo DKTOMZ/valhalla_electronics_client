@@ -2,20 +2,19 @@ import Product from "@/lib/productSchema";
 import { DbConnService } from "@/services/dbConnService";
 import {BackendServices} from "@/app/api/inversify.config";
 import { NextRequest } from "next/server";
-import mongoose from "mongoose";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
 
-export async function POST(req: NextRequest) {
+export async function POST() {
     return new Response(JSON.stringify({error:'POST Method not supported'}),{status:405,headers:{
         'Content-Type':'application/json'
     }});
 }
 
-export async function GET(req: NextRequest,{params}:{params:{category:string}}) {
+export async function GET(req: NextRequest) {
 
-    const category = params['category'].replace('category=','');
+    const category = req.nextUrl.searchParams.get('category');
 
     if (!category) {
         return new Response(JSON.stringify({error:'category is not provided'}),{ status: 409, headers: {

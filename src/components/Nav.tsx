@@ -14,6 +14,7 @@ import { StorageService } from "@/services/storageService";
 import {AppTheme} from "@/app/appTheme";
 import { useSharedState } from "@/app/contexts/context";
 import { CurrencyRateType } from "@/models/currencyRate";
+import { Cart } from "@/models/cart";
 
 interface MenuBarOptions {
     text: string,
@@ -33,10 +34,10 @@ const Nav: React.FC = () => {
     const [appTheme, setAppTheme] = useState<AppTheme | null>();
     const[showOptions,setShowOptions] = useState(false);
     const menuBarRef = useRef<HTMLDivElement>(null) as MutableRefObject<HTMLDivElement>;
-    const { updateCurrency, setInitialCurrency, setCurrencyRates, currencyRates, currencies, setCurrencies, currency, cartSize, setCartSize, categories, setCategories } = useSharedState();
+    const { updateCurrency, setInitialCurrency, setCurrencyRates, currencyRates, currencies, setCurrencies, currency, cartSize, setCartSize, categories, setCategories, setCart } = useSharedState();
 
     const menuBarOptions: MenuBarOptions[] = [
-        {text:'Favorites',icon:'fa-solid fa-heart',callback:()=>{router.push('/pages/favorites')}},
+        {text:'Orders',icon:'fa-solid fa-bars-progress',callback:()=>{router.push('/pages/orders')}},
         {text:appTheme === AppTheme.DARK ? 'Toggle light mode' : 'Toggle dark mode',icon:appTheme === AppTheme.DARK ? 'fa-solid fa-sun': 'fa-solid fa-moon',callback:()=>{appTheme === AppTheme.DARK ? setLightTheme() : setDarkTheme();}},
         {text:'Use Device Theme',icon:'fa-solid fa-circle-half-stroke',callback:()=>{setDeviceDefaultTheme();}},
         {text:'Cart',icon:'fa-solid fa-cart-arrow-down',callback:()=>{router.push('/pages/checkout')}}
@@ -153,8 +154,22 @@ const Nav: React.FC = () => {
             }
         });
 
+        const fetchCart = async() => {
+            return await http.post<Cart>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/fetch`,JSON.stringify({
+                email: session?.user?.email
+            }));
+        };
+
+        session && fetchCart().then((response)=>{
+            if(response.status >= 200 && response.status < 300 && response.data && response.data.cartItems){
+                setCart(response.data);
+            } else {
+                //
+            }
+        });
+
         setLoading(false);
-    },[http,session,storage]);
+    },[http,session,storage,categories.length,currencies.length,currencyRates.length,setCart,setCartSize,setCategories,setCurrencies,setCurrencyRates,setInitialCurrency]);
 
 
     useEffect(() => {
@@ -226,7 +241,7 @@ const Nav: React.FC = () => {
                         <Link href={'/'}>
                             <Logo height={50} width={50}/>
                         </Link>
-                        <p className="text-xl dark:text-orange-400 ml-2 title">Valhalla Electronics</p>
+                        <p className="text-xl dark:text-orange-500 ml-2 title">Valhalla Electronics</p>
                     </div>
                     <SearchBar categories={categories} className="hidden search-1"/>
                     <div className="flex items-center justify-center gap-x-4">
@@ -257,14 +272,14 @@ const Nav: React.FC = () => {
                              <button title="user" onClick={()=>router.push('/pages/user')} className="max-md:hidden">
                                 <i className="fa-solid fa-user fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-500"></i>
                              </button> }
-                            <button onClick={()=>router.push('/pages/favorites')} title="favorites" className="max-md:hidden"><i className="fa-solid fa-heart fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-500"></i></button>
+                            <button onClick={()=>router.push('/pages/orders')} title="orders" className="max-md:hidden"><i className="fa-solid fa-bars-progress fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-500"></i></button>
                             <button onClick={()=>router.push('/pages/checkout')} title="cart" className="relative">
                                 <i className="fa-solid fa-cart-arrow-down fa-xl"></i>
                                 <div className="absolute pl-1 -top-5 text-black dark:text-white w-full text-center">{cartSize}</div>
                             </button>
                             {currencies.length > 0 ? 
                             <select defaultValue={currency?.shortName || currencies.filter((item)=>item.shortName=='KES')[0].shortName}
-                             onChange={(e)=>updateCurrency(currencies.filter((item)=>item.shortName==e.target.value)[0])} title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden">
+                             onChange={(e)=>updateCurrency(currencies.filter((item)=>item.shortName==e.target.value)[0])} title="Currencies" className="dark:bg-zinc-700 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden">
                                 {currencies.map((currency)=>{
                                     return <option key={currency.symbol} value={currency.shortName}>{currency.shortName}</option>
                                 })}
@@ -286,15 +301,17 @@ interface searchProps {
 const SearchBar: React.FC<searchProps> = ({categories, className})=>{
     return (
         <div className={`${className}`}>
-                <div className={`flex flex-row items-center h-11 w-full shadow-md shadow-zinc-600 dark:shadow-none focus-within:dark:shadow-sm focus-within:dark:shadow-orange-400  focus-within:shadow-orange-700 rounded-md`}>
-                    <input type="search" placeholder="Search..." className={`search-bar h-full w-1/2 max-sm:w-10/12 rounded-s-md pl-4 dark:text-white dark:bg-slate-800 text-black outline-none`} />
-                    <select title="Categories" className={`max-sm:hidden h-full text-black w-1/2 dark:text-white dark:bg-slate-800 text-sm py-2 px-4 outline-none`}>
-                        <option value={'All categories'}>All categories</option>
-                        {categories.map((category)=>{
-                                return <option key={category._id} value={category.name}>{category.name}</option>
-                        })}
-                    </select>
-                    <button className="max-sm:w-2/12 custom-search-icon h-full px-3 bg-orange-600 md:hover:bg-orange-600 max-md:active:bg-orange-600 text-white rounded-e-md" title="search" onClick={()=>{}}>
+                <div className={`flex flex-row items-center h-11 w-full rounded-md`}>
+                    <div className="shadow-md w-full shadow-zinc-600 dark:shadow-none focus-within:dark:shadow-sm focus-within:dark:shadow-orange-400  focus-within:shadow-orange-700 h-11 flex flex-row items-center rounded-md">
+                        <input type="search" placeholder="Search..." className={`search-bar h-full w-1/2 rounded-s-md pl-4 dark:text-white dark:bg-zinc-700 text-black outline-none`} />
+                        <select title="Categories" className={`h-full text-black w-1/2 dark:text-white dark:bg-zinc-700 text-sm py-2 px-4 outline-none search-categories`}>
+                            <option value={'All categories'}>All categories</option>
+                            {categories.map((category)=>{
+                                    return <option key={category._id} value={category.name}>{category.name}</option>
+                            })}
+                        </select>
+                    </div>
+                    <button className="custom-search-icon h-full px-3 bg-orange-600 md:hover:bg-orange-600 max-md:active:bg-orange-600 text-white rounded-e-md" title="search" onClick={()=>{}}>
                         <i className="fa-solid fa-magnifying-glass fa-xl"></i>
                     </button>
                 </div>

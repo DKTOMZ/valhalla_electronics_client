@@ -56,7 +56,10 @@ export async function POST(req: NextRequest) {
         const cart = await Cart.findOne<CartType>({email: email});
 
         if(!cart) {
-            return new Response(JSON.stringify({'error':'User cart is empty'}),{status:404,headers:{
+            return new Response(JSON.stringify({
+                userEmail: email,
+                cartItems: []
+            }),{status:200,headers:{
                 'Content-Type':'application/json'
             }});
         }

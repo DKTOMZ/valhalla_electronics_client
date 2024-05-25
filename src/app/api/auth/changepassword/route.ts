@@ -88,7 +88,9 @@ export async function POST(request: Request) {
             await appUser.updateOne({ email:user.email},{ password: hashedPasword, updated: new Date()});
 
             await TokenBlacklist.create({
-                tokenJti: decodedToken.jti
+                tokenJti: decodedToken.jti,
+                created: new Date(),
+                updated: new Date()
             });
 
             return new Response(JSON.stringify({success:true}),{status:201,headers:{

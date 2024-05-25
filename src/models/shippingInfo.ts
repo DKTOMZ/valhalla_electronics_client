@@ -1,3 +1,5 @@
+// noinspection JSUnusedGlobalSymbols
+
 import { Product } from "./products";
 
 export interface ShippingInfo {

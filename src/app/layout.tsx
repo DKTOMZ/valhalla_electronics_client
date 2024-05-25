@@ -22,7 +22,7 @@ export default function RootLayout(x: { children: React.ReactNode, session: Sess
 
   return (
     <html lang="en">
-      <Script src='https://kit.fontawesome.com/086823c0ac.js' crossOrigin='anonymous'></Script>
+      <Script src={'https://kit.fontawesome.com/086823c0ac.js'} crossOrigin='anonymous'></Script>
       <body className={`${inter.className} bg-gray-100 dark:bg-zinc-900`}>
         <div className='bg-gray-100 dark:bg-zinc-900 h-full'>
           <SharedStateProvider>

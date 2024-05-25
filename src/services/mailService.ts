@@ -1,4 +1,3 @@
-import { AppMailOptions } from "@/lib/mailOptions";
 import { SendMailOptions, Transporter, createTransport } from "nodemailer";
 import { injectable } from "inversify";
 import { LoggerService } from "./loggerService";
@@ -25,13 +24,21 @@ export class MailService {
     }
 
     /** Inititate mail sending */
-    sendMail = (mailOptions: AppMailOptions) : Promise<void|any> => {
+    sendMail = <T = any>(mailOptions: {
+        to: string,
+        subject: string,
+        template: string,
+        context?: T
+    }) : Promise<void|any> => {
+
+        const template = require(`../templates/${mailOptions.template}.handlebars`);
+        const html = template(mailOptions.context);
+        
         const options: SendMailOptions = {
             from: process.env.NEXT_PUBLIC_VALHALLA_EMAIL,
             to: mailOptions.to,
             subject: mailOptions.subject,
-            text: mailOptions.text,
-            html: mailOptions.html
+            html
         }
 
         try {

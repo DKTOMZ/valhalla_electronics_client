@@ -43,14 +43,19 @@ const Product: React.FC = () => {
                     if(response.status >= 200 && response.status < 300 && response.data && response.data.cartItems){
                         const productInCart = response.data.cartItems.filter((item)=>item._id==productId);
                         productInCart.length > 0 ? setProductInCart(true): setProductInCart(false);
+                        setLoading(false);
                     } else {
                         //
                     }
                 });
+                if(!session){
+                    setLoading(false);
+                }
+                
             } else {
                 setProductExists(false);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
     },[http,productId, session])
@@ -81,6 +86,7 @@ const Product: React.FC = () => {
                 updateCartSize(response.data.size);
                 setCart(response.data.cart);
             } else {
+                curr ? curr.quantityInCart = 0 : null;
                 setProductInCart(false);
             }
             setSaving(false);
@@ -99,12 +105,13 @@ const Product: React.FC = () => {
         <title>Valhalla - Products</title>
         <div className="mt-8">
             <div className="mb-4">
-                <div className="h-1 w-24 bg-orange-400"></div>
-                <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-layer-group text-orange-400"></i></span> {product?.name.toUpperCase()}</h2>
+                <div className="h-1 w-24 bg-orange-500"></div>
+                <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-layer-group text-orange-500"></i></span> {product?.name.toUpperCase()}</h2>
             </div>
             <div className="flex flex-row gap-x-2">
                 <div className="flex flex-col w-full gap-y-4">
                     <div className="flex flex-row gap-x-6 max-md:flex-col items-start dark:bg-transparent bg-white shadow-zinc-700 dark:shadow-slate-300 shadow-sm rounded-md p-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <div className="max-md:!h-auto product-image-1 max-md:!w-auto max-md:mb-4" style={{height:'350px', width:'600px'}}><img src={`${product?.images[0].link}`} className="h-full w-full object-cover" alt={`${product?.name}`}/></div>
                         <div className="w-full">
                             <h2 className="text-2xl text-black dark:text-white">{product?.name}</h2>
@@ -113,16 +120,19 @@ const Product: React.FC = () => {
                                 {
                                     product && product.discount > 0 ? 
                                         <>
+                                            {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                                             <div className="font-bold text-xl text-black dark:text-white">{<p className="font-bold text-xl text-black dark:text-white">{((currency?.symbol||'')+' '+useCurrentCurrency((100-product.discount)/100 * product.price).toFixed(2))}</p>}</div>
+                                            {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
                                             <p className="font-bold line-through text-base text-gray-500 dark:text-gray-300">{(currency?.symbol||'')+' '+useCurrentCurrency(product?.price||0)}</p>
                                             <p className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{`${product.discount}% off`}</p>
                                         </>
+                                        // eslint-disable-next-line react-hooks/rules-of-hooks
                                     : <p className="font-bold text-xl text-black dark:text-white">{(currency?.symbol||'')+' '+useCurrentCurrency(product?.price||0)}</p>
                                 }
                             </div>
                             {product && product.stock > 0 ? 
                             <>
-                                <p className="text-green-500 mt-2 text-xl">IN STOCK</p>
+                                <p className="text-green-500 mt-2 text-xl font-bold">IN STOCK</p>
                                 {productInCart
                                 ?
                                     <div className="rounded-md text-white p-2 w-fit flex flex-row gap-x-2 mt-2 bg-green-600 justify-center items-center">
@@ -142,7 +152,6 @@ const Product: React.FC = () => {
                             <div>
                                 <p className="text-gray-500 mb-2 dark:text-gray-200 border-t-2 border-b-gray-300 w-full mt-8">SERVICES</p>
                                 <div className="flex flex-col gap-y-4">
-                                    <p className="inline text-black dark:text-white"><i className="fa-solid fa-truck fa-xl text-orange-400"></i> Free delivery on orders above {currency?.symbol + ' ' + useCurrentCurrency(9999)}</p>
                                     <p className="inline text-black dark:text-white"><i className="fa-solid fa-file-circle-check fa-xl text-orange-400"></i> 1 year warranty</p>
                                     <p className="inline text-black dark:text-white"><i className="fa-solid fa-truck-ramp-box fa-xl text-orange-400"></i> Free returns</p>
                                 </div>
@@ -154,7 +163,9 @@ const Product: React.FC = () => {
                         <p className="text-gray-600 dark:text-gray-200 mb-4">
                             {product && product.description}
                         </p>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <div style={{height:'500px'}} className="flex product-image-2 mb-14 flex-row max-md:!h-auto max-md:!w-auto items-center justify-center mx-auto"><img src={`${product?.images[1].link}`} className="h-full w-full" alt={`${product?.name}`}/></div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <div style={{height:'500px'}} className="flex product-image-2 mb-5 flex-row max-md:!h-auto max-md:!w-auto items-center justify-center mx-auto"><img src={`${product?.images[2].link}`} className="h-full w-full" alt={`${product?.name}`}/></div>
                         <h3 className="text-lg text-black mt-8 dark:text-white w-full border-b-2 mb-4 border-b-gray-300">Specifications</h3>
                         {product && Object.keys(product?.properties).map((key,index)=>{

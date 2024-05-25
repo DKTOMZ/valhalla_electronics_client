@@ -12,6 +12,8 @@ import { UserClient, UserServer } from "@/models/User";
 import { JWTService } from "@/services/jwtService";
 import { JWTPurpose } from "@/models/JWTPurpose";
 import { JWT } from "next-auth/jwt";
+import { GenericUserTemplate } from "@/models/genericUserTemplate";
+import { MailTemplates } from "@/models/mailTemplates";
 
 
 //Services
@@ -23,7 +25,7 @@ if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
     throw new Error('Missing NEXT_PUBLIC_COOKIE_NAME property in env file');
 }
 
-export const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(dbConnService.mongoConnect(),{
     databaseName: process.env.DB_NAME,
     collections: {
@@ -102,20 +104,14 @@ export const authOptions: NextAuthOptions = {
           try {
             const response = jwtService.generateJWT(user._id.toString(), JWTPurpose.EMAIL);
             if (response.error) { throw new Error(response.error); }
-            await mailService.sendMail({
-              to: user.email, subject: 'Valhalla Gadgets - Email verification for your account', text: '',
-              html: `<div>
-                    <h1>Verify your email</h1>
-                    <p>Hi, ${user.name}. Please click on the link below to verify your email<p>
-                    <a href=${response.success}>
-                        <p>Confirm Email</p>
-                    </a>
-                    <p>Please do not reply to this email as it is unattended.</p>
-                    <br/>
-                    <p>Warm regards.</p>
-                    <br/>
-                    <p>Valhalla Gadgets</p>
-                </div>`
+            await mailService.sendMail<GenericUserTemplate>({
+              to: user.email, 
+              subject: 'Valhalla Gadgets - Email verification for your account',
+              template: MailTemplates.LOGIN,
+              context: {
+                userName: user.name,
+                verifyLink: response.success
+              }
             });
           } catch (error: any) {
             throw new Error(error);

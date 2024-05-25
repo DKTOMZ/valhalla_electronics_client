@@ -2,8 +2,6 @@
 
 import Layout from "@/components/Layout";
 import { CardGrid } from "@/components/cardGrid";
-import { CardList } from "@/components/cardList";
-import CarouselSlider from "@/components/carousel";
 import Loading from "@/components/loading";
 import { FrontendServices } from "@/lib/inversify.config";
 import { Card } from "@/models/card";
@@ -18,8 +16,7 @@ const AppHome: React.FC = ()=>{
 
     //Services
     const http = FrontendServices.get<HttpService>('HttpService');
-    const storage = FrontendServices.get<StorageService>('StorageService');
-
+    FrontendServices.get<StorageService>('StorageService');
     const[products, setProducts] = useState<Product[]>();
     const[categories, setCategories] = useState<Category[]>();
     const[loading, setLoading] = useState(true);
@@ -61,20 +58,22 @@ const AppHome: React.FC = ()=>{
             description: '',
             title: product.name,
             price: product.price,
-            id: product._id
+            id: product._id,
+            product: product
         }
     }) : [{image:'',description:'',title:'',id:''}];
 
     //Most recently 10 added products with no discount
-    const recentUndiscountedProducts: Card[] = products ? products.filter((product,index)=>index < 10&&!product.discount).map((product)=>{
-        return {
-            image: product.images[1].link,
-            description: '',
-            title: product.name,
-            price: product.price,
-            id: product._id
-        }
-    }) : [{image:'',description:'',title:'',id:''}];
+    // const recentUndiscountedProducts: Card[] = products ? products.filter((product,index)=>index < 10&&!product.discount).map((product)=>{
+    //     return {
+    //         image: product.images[1].link,
+    //         description: '',
+    //         title: product.name,
+    //         price: product.price,
+    //         id: product._id,
+    //         product: product
+    //     }
+    // }) : [{image:'',description:'',title:'',id:''}];
 
     //Card list products flash sales (with discount)
     const flashSaleItems: Card[] = 
@@ -84,7 +83,8 @@ const AppHome: React.FC = ()=>{
             image: product.images[0].link,
             description: '',
             title: product.name,
-            id: product._id
+            id: product._id,
+            product: product
         }
         listItem.price = Math.round(((100-product.discount)/100) * product.price);
         listItem.oldPrice = product.price;
@@ -107,21 +107,22 @@ const AppHome: React.FC = ()=>{
     : [{image:'', title:'',id:''}];
 
     //Card list best-selling items
-    const bestSellingItems: Card[] = 
-    products ? 
-    products.filter((product,index)=>index < 5&&product.discount).map((product)=>{
-        let listItem: Card =  {
-            image: product.images[0].link,
-            description: '',
-            title: product.name,
-            id: product._id
-        }
-        listItem.price = Math.round(((100-product.discount)/100) * product.price);
-        listItem.oldPrice = product.price;
-        return listItem
-              
-    })
-    : [{image:'',description:'',title:'',id:''}] ;
+    // const bestSellingItems: Card[] =
+    // products ?
+    // products.filter((product,index)=>index < 5&&product.discount).map((product)=>{
+    //     let listItem: Card =  {
+    //         image: product.images[0].link,
+    //         description: '',
+    //         title: product.name,
+    //         id: product._id,
+    //         product: product
+    //     }
+    //     listItem.price = Math.round(((100-product.discount)/100) * product.price);
+    //     listItem.oldPrice = product.price;
+    //     return listItem
+    //
+    // })
+    // : [{image:'',description:'',title:'',id:''}] ;
 
     
     return <Layout>
@@ -131,21 +132,21 @@ const AppHome: React.FC = ()=>{
 
             <section id="featured">
                 <div className="mb-4">
-                    <div className="h-1 w-24 bg-orange-400"></div>
-                    <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-bolt text-orange-400"></i></span> FEATURED</h2>
+                    <div className="h-1 w-24 bg-orange-500"></div>
+                    <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-bolt text-orange-500"></i></span> FEATURED</h2>
                 </div>
-                <CardGrid naviagteTo="/pages/product/" items={featuredProducts} section={SectionEnum.FEATURED}/>
+                <CardGrid navigateTo="/pages/product/" items={featuredProducts} section={SectionEnum.FEATURED}/>
             </section>
 
             {flashSaleItems.length > 0 ?
             <section id="flash-sales">
                 <div className="mb-4">
-                    <div className="h-1 w-24 bg-orange-400"></div>
-                    <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-wand-sparkles text-orange-400"></i></span> FLASH SALES
+                    <div className="h-1 w-24 bg-orange-500"></div>
+                    <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-wand-sparkles text-orange-500"></i></span> FLASH SALES
                         {/* <a href="/pages/products" className="text-orange-500 dark:text-orange-400 md:dark:hover:text-orange-300 max-md:dark:active:text-orange-300 md:hover:text-orange-400 max-md:active:text-orange-400 ml-2 underline text-sm">See more</a> */}
                     </h2>
                 </div>
-                <CardGrid naviagteTo="/pages/product/" items={flashSaleItems} section={SectionEnum.FLASH_SALES}/>
+                <CardGrid navigateTo="/pages/product/" items={flashSaleItems} section={SectionEnum.FLASH_SALES}/>
             </section>
             : null}
 
@@ -161,11 +162,11 @@ const AppHome: React.FC = ()=>{
 
             <section id="categories">
                 <div className="mb-4">
-                    <div className="h-1 w-24 bg-orange-400"></div>
-                    <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-layer-group text-orange-400"></i></span> CATEGORIES
+                    <div className="h-1 w-24 bg-orange-500"></div>
+                    <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-layer-group text-orange-500"></i></span> CATEGORIES
                     </h2>
                 </div>
-                <CardGrid naviagteTo="/pages/products/" items={gridCategories} section={SectionEnum.CATEGORIES} />
+                <CardGrid navigateTo="/pages/products/" items={gridCategories} section={SectionEnum.CATEGORIES} />
             </section>
 
             {/* { bestSellingItems.length > 0 ?

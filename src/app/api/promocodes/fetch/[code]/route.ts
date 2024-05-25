@@ -4,7 +4,6 @@ import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { PromocodeType } from "@/models/promocode";
 import Promocode from "@/lib/promoCodesSchema";
-import mongoose from "mongoose";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
@@ -27,7 +26,7 @@ export async function POST(req: NextRequest) {
     }});
 }
 
-export async function GET(req: NextRequest,{params}:{params:{code:string}}) {
+export async function GET(req: NextRequest) {
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
         throw new Error('Missing NEXT_PUBLIC_COOKIE_NAME property in env file');
     }
@@ -44,7 +43,7 @@ export async function GET(req: NextRequest,{params}:{params:{code:string}}) {
         'Content-Type':'application/json'
     }}));
 
-    const code = params['code'].replace('code=','');
+    const code = req.nextUrl.searchParams.get('code');
 
     if (!code) {
         return new Response(JSON.stringify({error:'code is not provided'}),{ status: 409, headers: {

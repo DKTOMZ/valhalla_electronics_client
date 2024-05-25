@@ -6,6 +6,8 @@ import { DbConnService } from "@/services/dbConnService";
 import { JWTService } from "@/services/jwtService";
 import { MailService } from "@/services/mailService";
 import { hash } from "bcryptjs";
+import { GenericUserTemplate } from "@/models/genericUserTemplate";
+import { MailTemplates } from "@/models/mailTemplates";
 
 
 //Services
@@ -57,7 +59,9 @@ export async function POST(request: Request) {
             const data = await appUser.create({
                 name: email.slice(0,email.indexOf('@')).replace('.',' '),
                 email: email,
-                password: hashedPasword
+                password: hashedPasword,
+                created: new Date(),
+                updated: new Date()
             });
 
             const user = {
@@ -68,20 +72,14 @@ export async function POST(request: Request) {
 
               const response = jwtService.generateJWT(user._id.toString(),JWTPurpose.EMAIL);
               if (response.error) { throw new Error(response.error); }
-              await mailService.sendMail({
-                  to: user.email, subject: 'Valhalla Gadgets - Email verification for your account', text: '',
-                  html: `<div>
-                    <h1>Verify your email</h1>
-                    <p>Hi, ${user.name}. Please click on the link below to verify your email<p>
-                    <a href=${response.success}>
-                        <p>Confirm Email</p>
-                    </a>
-                    <p>Please do not reply to this email as it is unattended.</p>
-                    <br/>
-                    <p>Warm regards,</p>
-                    <br/>
-                    <p>Valhalla Gadgets</p>
-                </div>`
+              await mailService.sendMail<GenericUserTemplate>({
+                  to: user.email, 
+                  subject: 'Valhalla Gadgets - Welcome!',
+                  template: MailTemplates.NEW_USER,
+                  context: {
+                    userName: user.name,
+                    verifyLink: response.success
+                  }
               });
 
             return new Response(JSON.stringify({success:true}),{status:201,headers:{

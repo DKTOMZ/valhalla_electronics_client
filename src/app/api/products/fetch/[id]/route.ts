@@ -7,16 +7,16 @@ import mongoose from "mongoose";
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
 
-export async function POST(req: NextRequest) {
+export async function POST() {
     return new Response(JSON.stringify({error:'POST Method not supported'}),{status:405,headers:{
         'Content-Type':'application/json'
     }});
 }
 
-export async function GET(req: NextRequest,{params}:{params:{id:string}}) {
+export async function GET(req: NextRequest) {
 
     let objectId: mongoose.Types.ObjectId ;
-    const id = params['id'].replace('id=','');
+    const id = req.nextUrl.searchParams.get('id');
 
     if (!id) {
         return new Response(JSON.stringify({error:'Id is not provided'}),{ status: 409, headers: {

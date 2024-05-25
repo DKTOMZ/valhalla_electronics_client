@@ -2,7 +2,6 @@
 import { CurrencyConvert } from '@/models/currencyConvert';
 import { HttpService } from '@/services/httpService';
 import { GenericResponse } from '@/models/genericResponse';
-import { Container } from 'inversify';
 import cron from 'node-cron';
 import { FrontendServices } from '@/lib/inversify.config';
 
@@ -154,13 +153,17 @@ const scheduler = async() => {
     console.log(`${updatedCurrencies} Currencies refreshed at:`, new Date());
 };
 
-const job = // Schedule the task to run every 12 hours
-cron.schedule('0 */12 * * *', scheduler);
+const job = cron.schedule('0 0 * * *', scheduler); // Runs everyday at 12 AM
+const job2 = cron.schedule('0 12 * * *', scheduler); // Runs everyday at 12 PM
 
-// Start the cron job when the Next.js app starts
-export default {
+// noinspection JSUnusedGlobalSymbols
+const schedule = {
     async onStart() {
         job.start();
+        job2.start();
         console.log('Currency Rate Scheduler started...');
     },
 };
+
+// Start the cron job when the Next.js app starts
+export default schedule;

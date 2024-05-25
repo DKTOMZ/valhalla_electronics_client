@@ -2,7 +2,7 @@ import { Product } from "./products";
 
 export interface Cart {
     _id: string,
-    userEmail: string,
+    email: string,
     cartItems: Product[],
     created: Date,
     updated: Date

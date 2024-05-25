@@ -69,7 +69,9 @@ export async function POST(req: NextRequest) {
         if (!existingCart) {
             await Cart.create({
                 email: email,
-                cartItems: [cartItem]
+                cartItems: [cartItem],
+                created: new Date(),
+                updated: new Date()
             });
 
             return new Response(JSON.stringify({size:1}),{status:201,headers:{
@@ -85,7 +87,7 @@ export async function POST(req: NextRequest) {
             }});
         }
 
-        await Cart.updateOne({email:email,cartItems:[...existingCart.cartItems, cartItem]});
+        await Cart.updateOne({email:email,cartItems:[...existingCart.cartItems, cartItem], updated: new Date()});
 
         const cartAfterUpdate = await Cart.findOne<CartType>({email: email});
 

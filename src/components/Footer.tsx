@@ -5,7 +5,7 @@ export const Footer: React.FC = () => {
     return (
     <div id="footers" className="mt-auto py-2">
         <section id="newsletter" className="mb-8 w-full">
-            <div className="w-full bg-orange-800 p-4 flex flex-row items-center gap-x-2">
+            <div className="w-full bg-zinc-600 dark:bg-zinc-700 p-4 flex flex-row items-center gap-x-2">
                 <i className="fa-regular fa-newspaper text-white fa-xl"></i>
                 <p className="text-white text-base">Click <a href="" className="text-slate-200 md:hover:text-slate-100 max-md:active:text-slate-100 underline text-base">here</a> to sign up for our news letter and receive great monthly offers & discounts!</p>
             </div>
@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
         <div className="max-lg:hidden grid grid-flow-row md:grid-cols-5 p-4 gap-x-4">
             <div className="text-black dark:text-white flex flex-col col-span-2 gap-y-2 p-2">
                 <div className=" flex flex-row items-center">
-                    <i className="fa-solid fa-headset fa-2xl text-orange-400"></i>
+                    <i className="fa-solid fa-headset fa-2xl text-orange-500"></i>
                     <p className="ml-2 text-sm text-zinc-800 dark:text-gray-200">Something to ask? Get in touch</p>
                 </div>
                 <div className="flex flex-row text-sm font-bold dark:text-white text-black">

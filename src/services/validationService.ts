@@ -2,6 +2,7 @@ import { emailRegex } from "@/utils/regex";
 import { injectable } from "inversify";
 import React from "react";
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * Service to handle validations
  */
@@ -102,20 +103,22 @@ export class ValidationService {
     }
 
         /**
-     * Validate phone numbers for each country
-     * @required @param regex
-     * Regex Exp
-     * @required @param phoneNumber
-     * phoneNumber string value
-     * @required @param phoneNumberErrorElement  
-     * Element to show error for phoneNumber validation
-     */
-    validatePhoneNumbers(regex: string, phoneNumber: string, phoneNumberErrorElement: React.MutableRefObject<HTMLElement>): boolean {
+         * Validate phone numbers for each country
+         * @required @param regex
+         * Regex Exp
+         * @required @param phoneNumber
+         * phoneNumber string value
+         * @param regex
+         * @param phoneNumber
+         * @param phoneNumberErrorElement
+         * Element to show error for phoneNumber validation
+         */
+    validatePhoneNumbers(regex: string, phoneNumber: string, phoneNumberErrorElement: React.MutableRefObject<HTMLElement>|null=null): boolean {
         const regexCheck = new RegExp(regex).test(phoneNumber);
         if(!regexCheck){
-            phoneNumberErrorElement.current.innerHTML = 'Use correct phone number format for your country';
+            phoneNumberErrorElement ? phoneNumberErrorElement.current.innerHTML = 'Use correct phone number format for your country' : null;
         } else {
-            phoneNumberErrorElement.current.innerHTML = '';
+            phoneNumberErrorElement ? phoneNumberErrorElement.current.innerHTML = '': null;
         }
         return regexCheck;
     }

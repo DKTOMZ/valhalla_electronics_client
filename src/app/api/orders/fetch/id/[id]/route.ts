@@ -1,10 +1,9 @@
+import Order from "@/lib/orderSchema";
 import { DbConnService } from "@/services/dbConnService";
 import {BackendServices} from "@/app/api/inversify.config";
 import { NextRequest } from "next/server";
+import { OrderType } from "@/models/order";
 import { getToken } from "next-auth/jwt";
-import Favorites from "@/lib/favoritesSchema";
-import { FavoritesType } from "@/models/favorites";
-import mongoose from "mongoose";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
@@ -27,7 +26,8 @@ export async function POST(req: NextRequest) {
     }});
 }
 
-export async function GET(req: NextRequest,{params}:{params:{id:string}}) {
+export async function GET(req: NextRequest) {
+
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
         throw new Error('Missing NEXT_PUBLIC_COOKIE_NAME property in env file');
     }
@@ -40,32 +40,29 @@ export async function GET(req: NextRequest,{params}:{params:{id:string}}) {
         }})
     }
 
+    const orderId = req.nextUrl.searchParams.get('id');
+
+    if (!orderId) {
+        return new Response(JSON.stringify({error:'orderId is not provided'}),{ status: 409, headers: {
+            'Content-Type':'application/json'
+        }})
+    }
+
     await dbConnService.mongooseConnect().catch(err => new Response(JSON.stringify({error:err}),{status:503,headers:{
         'Content-Type':'application/json'
     }}));
 
 
-    let objectId: mongoose.Types.ObjectId ;
-    const id = params['id'].replace('id=','');
-
-    if (!id) {
-        return new Response(JSON.stringify({error:'id is not provided'}),{ status: 409, headers: {
-            'Content-Type':'application/json'
-        }})
-    }
-
     try {
-        objectId = new mongoose.Types.ObjectId(id);
-    } catch (error:any) {
-        return new Response(JSON.stringify({'error':'Invalid product id. Product does not exist'}),{status:404,headers:{
-            'Content-Type':'application/json'
-        }});
-    }
+        const order = await Order.find<OrderType>({orderId:orderId});
 
-    try {
-        const favorite = await Favorites.find<FavoritesType>({_id:id});
+        if(!order || order.length === 0){
+            return new Response(JSON.stringify({error:'Order not found'}),{status:404,headers:{
+                'Content-Type':'application/json'
+            }});
+        }
 
-        return new Response(JSON.stringify(favorite[0]),{status:200,headers:{
+        return new Response(JSON.stringify(order[0]),{status:200,headers:{
             'Content-Type':'application/json'
         }});
     } catch (error:any) {
