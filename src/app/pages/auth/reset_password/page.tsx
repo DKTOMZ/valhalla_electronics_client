@@ -83,7 +83,7 @@ const ResetPassword = () => {
 
     return (
         <Layout>
-            <div className="h-full flex flex-col items-center justify-center">
+            <div className="h-full pt-3 flex flex-col items-center justify-center">
                 <title>Valhalla - ResetPassword</title>
                 <Logo height={120} width={120}/>
                 { resetPasswordSuccess ? <Modal title={'Success!'} body={'Please check your email for password reset link'} 

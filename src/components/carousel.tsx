@@ -57,17 +57,17 @@ const CarouselSlider: React.FC<CarouselProps> = ({images, timeout=5000, autoScro
   return (
     images.length > 0 && (
       <div className="flex flex-row w-full h-full justify-center items-center mb-16 relative">
-        <button title="slide left" className="p-1 absolute z-10 left-0 text-3xl bg-orange-500 md:hover:bg-orange-400 max-md:active:bg-orange-400 text-white" onClick={slideLeft}>{"<"}</button>
+        <button title="slide left" className="p-1 absolute z-10 left-0 text-3xl bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 text-white" onClick={slideLeft}>{"<"}</button>
         {images.map((image,index)=>{
           return <img style={index === currentIndex ? {maxHeight:maxHeight}: {}} key={index} className={`dark:brightness-75 transition-opacity object-cover duration-1000 ${index === currentIndex ? 'opacity-100 w-full md:w-4/5 lg:w-3/5' : 'opacity-0 max-h-0 max-w-0 '}`} src={image.source} alt={image.label} />
         })}
-        <button title="slide right" className="p-1 absolute right-0 text-3xl bg-orange-500 md:hover:bg-orange-400 max-md:active:bg-orange-400 text-white" onClick={slideRight}>{">"}</button>
+        <button title="slide right" className="p-1 absolute right-0 text-3xl bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 text-white" onClick={slideRight}>{">"}</button>
         <div className="flex flex-row absolute -bottom-6">
           {images.map((_image,index)=>{
-            return <div key={index} className={`h-1 w-8 mx-1 ${index === currentIndex ? 'bg-orange-400' : 'dark:bg-zinc-500 bg-gray-400'}`}></div>
+            return <div key={index} className={`h-1 w-8 mx-1 ${index === currentIndex ? 'bg-orange-600' : 'dark:bg-zinc-500 bg-gray-400'}`}></div>
           })}
         </div>
-        <button className="absolute z-10 top-3/4 bg-orange-500 w-2/5 max-sm:w-3/5 text-ellipsis text-lg overflow-hidden whitespace-nowrap md:hover:bg-orange-400 max-md:active:bg-orange-400 py-1 md:py-2 px-2 rounded-md text-white">{images[currentIndex].label}</button>
+        <button className="absolute z-10 top-3/4 bg-orange-600 w-2/5 max-sm:w-3/5 text-ellipsis text-lg overflow-hidden whitespace-nowrap md:hover:bg-orange-500 max-md:active:bg-orange-500 py-1 md:py-2 px-2 rounded-md text-white">{images[currentIndex].label}</button>
       </div>
     )
   );

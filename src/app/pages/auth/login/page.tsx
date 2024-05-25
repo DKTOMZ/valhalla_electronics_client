@@ -96,7 +96,7 @@ const Login: React.FC = () => {
         <Layout>
             <>
                 <title>Valhalla - Login</title>
-                <div className="h-screen flex flex-col items-center justify-center">
+                <div className="h-full flex flex-col items-center justify-center pt-3">
                     <Logo height={120} width={120}/>
                     <h2 className='sm:text-2xl text-lg dark:text-white font-bold block my-10'>Sign in to your account</h2>
                     <div className='flex max-sm:w-full sm:flex-row flex-col w-3/4 sm:w-full sm:max-w-sm justify-between mb-2'>

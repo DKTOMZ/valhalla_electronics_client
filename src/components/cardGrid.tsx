@@ -3,6 +3,7 @@ import { SectionEnum } from "@/models/sectionEnum";
 import "@/app/globals.css";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSharedState } from "@/app/contexts/context";
 
 interface CardListProps {
     items: Card[],
@@ -20,13 +21,14 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
     const [currentPage,setCurrentPage] = useState(1);
     const [minPage, setMinPage] = useState(1);
     const [maxPage,setMaxPage] = useState(pages);
+    const { currency, useCurrentCurrency } = useSharedState();
 
     const pageElements = [];
 
     if (paginate) {
         
         for (let i = minPage; i <= maxPage; i++) {
-            pageElements.push(<button onClick={()=>setCurrentPage(i)} style={{borderRadius: '50%'}} key={i} className={`flex-shrink-0 text-lg ${currentPage === i ? 'bg-orange-500 text-white' : 'text-black dark:text-white'} flex flex-row items-center justify-center h-8 w-8`}>{i}</button>)
+            pageElements.push(<button onClick={()=>setCurrentPage(i)} style={{borderRadius: '50%'}} key={i} className={`flex-shrink-0 text-lg ${currentPage === i ? 'bg-orange-600 text-white' : 'text-black dark:text-white'} flex flex-row items-center justify-center h-8 w-8`}>{i}</button>)
         }
     
     }
@@ -47,7 +49,7 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                                 {section === SectionEnum.FLASH_SALES ? 
                                     <div className="flex flex-row items-start justify-between">
                                         <div>
-                                            <div className="border text-sm rounded-sm text-white bg-orange-500 p-1 w-fit border-orange-500">{item.oldPrice ? Math.round(((item.oldPrice-(item.price ? item.price : 0))/item.oldPrice)*100).toFixed(2).toLocaleLowerCase()+"% off": null}</div>
+                                            <div className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{item.oldPrice ? Math.round((((item.price||0)-(item.oldPrice))/(item.oldPrice))*100)+"% off": null}</div>
                                             <p className="ml-1 text-orange-400">Deal</p>
                                         </div>
                                         <div className="flex flex-row items-start gap-x-3">
@@ -66,9 +68,9 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                                 : null}
                                 <div className="flex flex-row items-center gap-x-2">
                                     <p className="text-lg text-gray-800 dark:text-gray-100">
-                                        {`$`+item.price?.toLocaleString()}
+                                        {(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}
                                     </p>
-                                    {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {`$`+item.oldPrice?.toLocaleString()}</p> : null}
+                                    {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
                                 </div>
                                 <small className="text-sm text-black dark:text-white">
                                     {item.title}
@@ -91,7 +93,7 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                                 {section === SectionEnum.FLASH_SALES ? 
                                     <div className="flex flex-row items-start justify-between">
                                         <div>
-                                            <div className="border text-sm rounded-sm text-white bg-orange-500 p-1 w-fit border-orange-500">{item.oldPrice ? Math.round(((item.oldPrice-(item.price ? item.price : 0))/item.oldPrice)*100).toFixed(2)+"% off": null}</div>
+                                            <div className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{item.oldPrice ? Math.round((((item.price||0)-(item.oldPrice))/(item.oldPrice))*100)+"% off": null}</div>
                                             <p className="ml-1 text-orange-400">Deal</p>
                                         </div>
                                         <div className="flex flex-row items-start gap-x-3">
@@ -110,9 +112,9 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                                 : null}
                                 <div className="flex flex-row items-center gap-x-2">
                                     <p className="text-lg text-gray-800 dark:text-gray-100">
-                                        {`$`+item.price?.toLocaleString()}
+                                        {(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}
                                     </p>
-                                    {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {`$`+item.oldPrice?.toLocaleString()}</p> : null}
+                                    {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
                                 </div>
                                 <small className="text-sm text-black dark:text-white">
                                     {item.title}
@@ -135,8 +137,8 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                 {section !== SectionEnum.CATEGORIES ?
                 <>
                     <div className="flex flex-row gap-x-3 items-center">
-                        <p className="font-bold">${item.price?.toLocaleString()}</p>
-                        {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {`$`+item.oldPrice?.toLocaleString()}</p> : null}
+                        <p className="font-bold">{(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}</p>
+                        {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
                     </div>
 
                     {section === SectionEnum.FLASH_SALES ? <p className="ml-1 text-orange-400">Deal</p> : null}
@@ -159,8 +161,8 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                 {section !== SectionEnum.CATEGORIES ?
                 <>
                     <div className="flex flex-row gap-x-3 items-center">
-                        <p className="font-bold">${item.price?.toLocaleString()}</p>
-                        {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {`$`+item.oldPrice?.toLocaleString()}</p> : null}
+                        <p className="font-bold">{(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}</p>
+                        {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
                     </div>
 
                     {section === SectionEnum.FLASH_SALES ? <p className="ml-1 text-orange-400">Deal</p> : null}

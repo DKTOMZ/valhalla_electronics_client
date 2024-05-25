@@ -13,6 +13,7 @@ import { CurrenciesType } from "@/models/currencies";
 import { StorageService } from "@/services/storageService";
 import {AppTheme} from "@/app/appTheme";
 import { useSharedState } from "@/app/contexts/context";
+import { CurrencyRateType } from "@/models/currencyRate";
 
 interface MenuBarOptions {
     text: string,
@@ -28,14 +29,11 @@ const Nav: React.FC = () => {
     const router = useRouter();
     
     //State variables
-    const [categories,setCategories] = useState<Category[]>([]);
-    const [currencies,setCurrencies] = useState<CurrenciesType[]>([]);
     const [loading,setLoading] = useState(false);
-    const { cartSize, updateCartSize } = useSharedState();
     const [appTheme, setAppTheme] = useState<AppTheme | null>();
     const[showOptions,setShowOptions] = useState(false);
     const menuBarRef = useRef<HTMLDivElement>(null) as MutableRefObject<HTMLDivElement>;
-    const { updateCurrency } = useSharedState();
+    const { updateCurrency, setInitialCurrency, setCurrencyRates, currencyRates, currencies, setCurrencies, currency, cartSize, setCartSize, categories, setCategories } = useSharedState();
 
     const menuBarOptions: MenuBarOptions[] = [
         {text:'Favorites',icon:'fa-solid fa-heart',callback:()=>{router.push('/pages/favorites')}},
@@ -87,13 +85,14 @@ const Nav: React.FC = () => {
         }
     }
 
+    const { data: session , status } = useSession();
+
     useEffect(()=>{
         const fetchCategories = async() => {
             const response: HttpServiceResponse<Category[]> = await http.get(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/categories/fetch`);
 
             if (response.status >= 200 && response.status<=299 && response.data) {
                 setCategories([...response.data.filter((category)=>category.name!='Electronics')]);
-                storage.setSessionObject('categories',JSON.stringify(response.data.filter((category)=>category.name!='Electronics')));
             } else {
                 //
             }
@@ -104,8 +103,17 @@ const Nav: React.FC = () => {
 
             if (response.status >= 200 && response.status<=299 && response.data) {
                 setCurrencies([...response.data]);
-                updateCurrency(response.data.filter((item)=>item.symbol=='KES')[0]);
-                setLoading(false);
+                setInitialCurrency(response.data.filter((item)=>item.shortName=='KES')[0]);
+            } else {
+                //
+            }
+        }
+
+        const fetchCurrencyRates = async() => {
+            const response: HttpServiceResponse<CurrencyRateType[]> = await http.get(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/fetch`);
+
+            if (response.status >= 200 && response.status<=299 && response.data) {
+                setCurrencyRates(response.data);
             } else {
                 //
             }
@@ -120,30 +128,34 @@ const Nav: React.FC = () => {
                 setAppTheme(AppTheme.LIGHT);
             }
         }
-        !storage.getSessionObject('categories') ? fetchCategories() : setCategories(JSON.parse(storage.getSessionObject('categories') || ''));
 
-        !storage.getSessionObject('currencies') ? fetchCurrencies(): setCurrencies(JSON.parse(storage.getSessionObject('currencies') || ''));
-    },[http]);
+        currencyRates.length == 0 ? fetchCurrencyRates() : null;
 
-    const { data: session , status } = useSession();
+        if(currencies.length == 0){
+            fetchCurrencies();
+        } else {
+            //
+        }
 
-    useEffect(()=>{
+        categories.length == 0 ? fetchCategories() : null;
+
         const fetchCartSize = async() => {
             return await http.post<{size: number}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/getSize`,JSON.stringify({
                 email: session?.user?.email
             }));
         };
-        const cartSize = storage.getSessionObject('cartSize');
 
-        !cartSize && session && fetchCartSize().then((response)=>{
+        session && fetchCartSize().then((response)=>{
             if(response.status >= 200 && response.status < 300){
-                updateCartSize(response.data.size);
+                setCartSize(response.data.size);
             } else {
-                updateCartSize(0);
+                //setCartSize(0);
             }
         });
 
-    },[session,storage])
+        setLoading(false);
+    },[http,session,storage]);
+
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -241,20 +253,20 @@ const Nav: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            {!session ? <button onClick={()=>router.push('/pages/auth/login')} className="max-md:hidden bg-orange-500 md:hover:bg-orange-400 max-md:active:bg-orange-400 py-1 px-2 rounded-md text-white">Log in</button> :
+                            {!session ? <button onClick={()=>router.push('/pages/auth/login')} className="max-md:hidden bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 py-1 px-2 rounded-md text-white">Log in</button> :
                              <button title="user" onClick={()=>router.push('/pages/user')} className="max-md:hidden">
-                                <i className="fa-solid fa-user fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-400"></i>
+                                <i className="fa-solid fa-user fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-500"></i>
                              </button> }
-                            <button onClick={()=>router.push('/pages/favorites')} title="favorites" className="max-md:hidden"><i className="fa-solid fa-heart fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-400"></i></button>
+                            <button onClick={()=>router.push('/pages/favorites')} title="favorites" className="max-md:hidden"><i className="fa-solid fa-heart fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-500"></i></button>
                             <button onClick={()=>router.push('/pages/checkout')} title="cart" className="relative">
                                 <i className="fa-solid fa-cart-arrow-down fa-xl"></i>
                                 <div className="absolute pl-1 -top-5 text-black dark:text-white w-full text-center">{cartSize}</div>
                             </button>
                             {currencies.length > 0 ? 
-                            <select defaultValue={currencies.filter((item)=>item.symbol=='KES')[0].symbol}
-                             onChange={(e)=>updateCurrency(currencies.filter((item)=>item.name=e.target.value)[0])} title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden">
+                            <select defaultValue={currency?.shortName || currencies.filter((item)=>item.shortName=='KES')[0].shortName}
+                             onChange={(e)=>updateCurrency(currencies.filter((item)=>item.shortName==e.target.value)[0])} title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden">
                                 {currencies.map((currency)=>{
-                                    return <option key={currency.symbol} value={currency.symbol}>{currency.symbol}</option>
+                                    return <option key={currency.symbol} value={currency.shortName}>{currency.shortName}</option>
                                 })}
                             </select>
                             : null}
@@ -282,7 +294,7 @@ const SearchBar: React.FC<searchProps> = ({categories, className})=>{
                                 return <option key={category._id} value={category.name}>{category.name}</option>
                         })}
                     </select>
-                    <button className="max-sm:w-2/12 custom-search-icon h-full px-3 bg-orange-500 md:hover:bg-orange-400 max-md:active:bg-orange-400 text-white rounded-e-md" title="search" onClick={()=>{}}>
+                    <button className="max-sm:w-2/12 custom-search-icon h-full px-3 bg-orange-600 md:hover:bg-orange-600 max-md:active:bg-orange-600 text-white rounded-e-md" title="search" onClick={()=>{}}>
                         <i className="fa-solid fa-magnifying-glass fa-xl"></i>
                     </button>
                 </div>

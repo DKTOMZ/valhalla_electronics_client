@@ -108,7 +108,7 @@
     }
 }
 
-@media(max-width: 1039px) {
+@media(max-width: 1055px) {
     .search-2 {
         display: flex;
     }
@@ -118,7 +118,7 @@
     }
 }
 
-@media(min-width: 1040px) {
+@media(min-width: 1056px) {
     .search-1 {
         display: flex;
     }

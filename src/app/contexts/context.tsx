@@ -1,25 +1,52 @@
 // context.tsx
-import { FrontendServices } from '@/lib/inversify.config';
 import { Cart } from '@/models/cart';
+import { Category } from '@/models/categories';
 import { CurrenciesType } from '@/models/currencies';
-import { CurrencyConvert } from '@/models/currencyConvert';
-import { HttpService } from '@/services/httpService';
-import { StorageService } from '@/services/storageService';
+import { CurrencyRateType } from '@/models/currencyRate';
+import { PromocodeType } from '@/models/promocode';
+import { countryPhoneNumbers } from "@/utils/phoneNumbers";
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
 
 interface SharedState {
   cart: Cart|null;
-  updateCart: (newValue: Cart|null) => void;
+  setCart: React.Dispatch<React.SetStateAction<Cart|null>>;
   cartSize: number;
-  updateCartSize: (newValue: number) => void;
+  setCartSize: React.Dispatch<React.SetStateAction<number>>;
   currency: CurrenciesType | null;
+  setInitialCurrency: (newValue: CurrenciesType|null) => void;
+  updateCurrency: (newValue: CurrenciesType|null) => Promise<void>;
+  currencies: CurrenciesType[];
+  setCurrencies: React.Dispatch<React.SetStateAction<CurrenciesType[]>>;
   cartTotal: number,
-  updateCartTotal: (newValue: number) => void;
+  setCartTotal: React.Dispatch<React.SetStateAction<number>>;
   shippingFee: number,
-  updateShippingFee: (newValue: number) => void;
-  updateCurrency: (newValue: CurrenciesType|null) => void;
+  setShippingFee: React.Dispatch<React.SetStateAction<number>>;
+  currencyRates: CurrencyRateType[];
+  setCurrencyRates: React.Dispatch<React.SetStateAction<CurrencyRateType[]>>;
+  categories: Category[];
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
+  currentCheckoutTab: number;
+  setCurrentCheckoutTab: React.Dispatch<React.SetStateAction<number>>;
+  appliedPromocode: PromocodeType|undefined,
+  setAppliedPromocode: React.Dispatch<React.SetStateAction<PromocodeType|undefined>>;
   useCurrentCurrency: (value: number) => number;
+  countryName: string;
+  setCountryName: React.Dispatch<React.SetStateAction<string>>;
+  firstName: string;
+  setFirstName: React.Dispatch<React.SetStateAction<string>>;
+  lastName: string;
+  setLastName: React.Dispatch<React.SetStateAction<string>>;
+  phoneNumber: string;
+  setPhoneNumber: React.Dispatch<React.SetStateAction<string>>;
+  phoneCode: string;
+  setPhoneCode: React.Dispatch<React.SetStateAction<string>>;
+  city: string;
+  setCity: React.Dispatch<React.SetStateAction<string>>;
+  address: string;
+  setAddress: React.Dispatch<React.SetStateAction<string>>;
+  postalCode: string;
+  setPostalCode: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const SharedStateContext = createContext<SharedState | undefined>(undefined);
@@ -31,62 +58,53 @@ interface SharedStateProvider {
 /** Provider to wrap the app to make app data available globally. */
 export const SharedStateProvider: React.FC<SharedStateProvider> = ({ children }) => {
 
-  const storage = FrontendServices.get<StorageService>('StorageService');
-  const http = FrontendServices.get<HttpService>('HttpService');
+  const [cart, setCart] = useState<Cart|null>(null);
+  const [cartSize, setCartSize] = useState<number>(0);
+  const [currency, setCurrency] = useState<CurrenciesType|null>(null);
+  const [currencyRate,setCurrencyRate] = useState<number>(1);
+  const [cartTotal,setCartTotal] = useState<number>(0);
+  const [shippingFee,setShippingFee] = useState<number>(0);
+  const [currencyRates, setCurrencyRates] = useState<CurrencyRateType[]>([]);
+  const [currentCheckoutTab, setCurrentCheckoutTab] = useState<number>(0);
+  const [appliedPromocode, setAppliedPromocode] = useState<PromocodeType>();
+  const [currencies, setCurrencies] = useState<CurrenciesType[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [countryName, setCountryName] = useState<string>(countryPhoneNumbers[0].countryName);
+  const [firstName, setFirstName] = useState<string>('');
+  const [lastName, setLastName] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [phoneCode, setPhoneCode] = useState<string>(countryPhoneNumbers[0].phoneCode);
+  const [address, setAddress] = useState<string>('');
+  const [city, setCity] = useState<string>('');
+  const [postalCode, setPostalCode] = useState<string>('');
 
-  const [cart, setCart] = useState<Cart|null>(JSON.parse(storage.getSessionObject('cart')||'null') != 'null' ?  JSON.parse(storage.getSessionObject('cart')||'null')  : null);
-  const [cartSize, setCartSize] = useState<number>(parseInt(storage.getSessionObject('cartSize')||'0'));
-  const [currency, setCurrency] = useState<CurrenciesType|null>(JSON.parse(storage.getSessionObject('currency')||'null') != 'null' ?  JSON.parse(storage.getSessionObject('currency')||'null')  : null);
-  const [currencyRate,setCurrencyRate] = useState<number>(parseInt(storage.getSessionObject('currencyRate')||'0'));
-  const [cartTotal,setCartTotal] = useState<number>(parseInt(storage.getSessionObject('cartTotal')||'0'));
-  const [shippingFee,setShippingFee] = useState<number>(parseInt(storage.getSessionObject('shippingFee')||'0'))
-
-  const updateCart = (newValue: Cart|null) => {
-    setCart(newValue);
-    newValue ? storage.setSessionObject('cart', JSON.stringify(newValue)) 
-    : storage.setSessionObject('cart',null);
-  };
-
-  const updateCartSize = (newValue: number) => {
-    setCartSize(newValue);
-    storage.setSessionObject('cartSize',newValue);
+  const setInitialCurrency = (newValue: CurrenciesType|null) => {
+    setCurrency(newValue);
   }
 
   const updateCurrency = async(newValue: CurrenciesType|null) => {
-
-    const response = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
-        JSON.stringify({
-          fromValue: 1,
-          fromType: currency?.symbol.toUpperCase().toString() || 'KES',
-          toType: newValue?.symbol.toUpperCase().toString() || ''
-        })
-    );
-    if(response.status == 200 && response.data ){
-      setCurrencyRate(parseFloat(response.data['result-float'].toFixed(2)));
-      setCurrency(newValue);
-      newValue ? storage.setSessionObject('currency', JSON.stringify(newValue)) 
-      : storage.setSessionObject('currency', null);
+    setCurrency(newValue);
+    if(newValue?.shortName != 'KES') {
+      const TOKES = currencyRates.filter((rate)=>rate.from==currency?.shortName && rate.to=='KES');
+      TOKES && TOKES.length > 0 && setCurrencyRate(TOKES[0].rate);
+      const TONEWVALUE = currencyRates.filter((rate)=>rate.from=='KES' && rate.to==newValue?.shortName);
+      TONEWVALUE && TONEWVALUE.length > 0 && setCurrencyRate(TONEWVALUE[0].rate);
     } else {
-      console.log(response.data.error);
     }
   }
 
   const useCurrentCurrency = (value: number) => {
-    return currencyRate ? parseFloat((currencyRate * value).toFixed(2)) : value;   
+    if(currency?.shortName == 'KES'){
+      return value;
+    } else {
+      return parseFloat((currencyRate * value).toFixed(2));
+    }
   }
-  
-  const updateCartTotal = (newValue: number) => {
-    setCartTotal(newValue);
-    storage.setSessionObject('cartTotal',newValue);
-  };
-
-  const updateShippingFee = (newValue: number) => {
-    setShippingFee(newValue);
-    storage.setSessionObject('shippingFee',newValue);
-  };
 
   return (
-    <SharedStateContext.Provider value={{ cart, updateCart, cartSize, updateCartSize, currency, cartTotal, updateCartTotal, shippingFee, updateShippingFee, updateCurrency, useCurrentCurrency }}>
+    <SharedStateContext.Provider value={{ cart, setCart, cartSize, setCartSize, currency, setInitialCurrency, updateCurrency, cartTotal, setCartTotal, shippingFee, setShippingFee, currencyRates, setCurrencyRates, currentCheckoutTab, setCurrentCheckoutTab, appliedPromocode, setAppliedPromocode, useCurrentCurrency, currencies, setCurrencies, categories, setCategories
+      , countryName, setCountryName, firstName, setFirstName, lastName, setLastName, phoneNumber, setPhoneNumber, phoneCode, setPhoneCode, address, setAddress, city, setCity, postalCode, setPostalCode
+     }}>
       {children}
     </SharedStateContext.Provider>
   );

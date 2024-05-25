@@ -5,30 +5,29 @@ import ErrorPage from "@/components/error";
 import Loading from "@/components/loading";
 import { FrontendServices } from "@/lib/inversify.config";
 import { Cart } from "@/models/cart";
-import { Product } from "@/models/products";
+import { Product as ProductType } from "@/models/products";
 import { HttpService } from "@/services/httpService";
-import { StorageService } from "@/services/storageService";
 import { useSession } from "next-auth/react";
-import { redirect, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
-
 
 const Product: React.FC = () => {
 
     const http = FrontendServices.get<HttpService>('HttpService');
+    const router = useRouter();
 
     const productId = useSearchParams().get("id");
-    const [product, setProduct] = useState<Product>();
+    const [product, setProduct] = useState<ProductType>();
     const [loading,setLoading] = useState(true);
     const [saving,setSaving] = useState(false);
     const [productExists,setProductExists] = useState(true);
     const [productInCart, setProductInCart] = useState<boolean>(false);
     const { data: session , status } = useSession();
-    const { updateCartSize } = useSharedState();
+    const { setCartSize: updateCartSize, useCurrentCurrency, currency, setCart } = useSharedState();
 
     useEffect(()=>{
         const fetchProduct = async() => {
-            return await http.get<Product>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/products/fetch/id=${encodeURIComponent(productId || '')}`);
+            return await http.get<ProductType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/products/fetch/id=${encodeURIComponent(productId || '')}`);
         }
 
         const fetchCart = async() => {
@@ -47,23 +46,31 @@ const Product: React.FC = () => {
                     } else {
                         //
                     }
-                    setLoading(false);
                 });
             } else {
                 setProductExists(false);
-                setLoading(false);
             }
+            setLoading(false);
         });
 
     },[http,productId, session])
 
     const addToCart = async(e: React.FormEvent<HTMLButtonElement>) => {
-        setSaving(true);
-        e.preventDefault();
         if(!session){
-            redirect('/pages/auth/login');
+            router.push('/pages/auth/login');
         } else {
-            const response = await http.post<{size:number}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/save`,
+            setSaving(true);
+            e.preventDefault();
+
+            const curr = product;
+
+            if(curr){
+                curr.quantityInCart = 1;
+            }
+
+            setProduct(curr);
+
+            const response = await http.post<{size:number, cart: Cart}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/save`,
                 JSON.stringify({
                     email: session?.user?.email,
                     cartItem: product
@@ -71,7 +78,8 @@ const Product: React.FC = () => {
             );
             if(response.status >= 200 && response.status < 300) {
                 setProductInCart(true);
-                updateCartSize(response.data.size)
+                updateCartSize(response.data.size);
+                setCart(response.data.cart);
             } else {
                 setProductInCart(false);
             }
@@ -102,40 +110,39 @@ const Product: React.FC = () => {
                             <h2 className="text-2xl text-black dark:text-white">{product?.name}</h2>
                             <p className="text-base text-black dark:text-white border-b-2 border-b-gray-300 w-full">Brand : {product?.brand}</p>
                             <div className="flex product-price flex-row items-center gap-x-2 mt-2">
-                                <p className="font-bold text-xl text-black dark:text-white">{product?.price.toLocaleString()}</p>
                                 {
                                     product && product.discount > 0 ? 
                                         <>
-                                            <p className="font-bold text-xl text-black dark:text-white">{<p className="font-bold text-xl text-black dark:text-white">{((100-product.discount)/100 * product.price).toFixed(2).toLocaleLowerCase()}</p>}</p>
-                                            <p className="font-bold line-through text-base text-gray-500 dark:text-gray-300">{product.price.toLocaleString()}</p>
-                                            <p className="border text-sm rounded-sm text-white bg-orange-500 p-1 w-fit border-orange-500">{`${product.discount}`}</p>
+                                            <div className="font-bold text-xl text-black dark:text-white">{<p className="font-bold text-xl text-black dark:text-white">{((currency?.symbol||'')+' '+useCurrentCurrency((100-product.discount)/100 * product.price).toFixed(2))}</p>}</div>
+                                            <p className="font-bold line-through text-base text-gray-500 dark:text-gray-300">{(currency?.symbol||'')+' '+useCurrentCurrency(product?.price||0)}</p>
+                                            <p className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{`${product.discount}% off`}</p>
                                         </>
-                                    : null
+                                    : <p className="font-bold text-xl text-black dark:text-white">{(currency?.symbol||'')+' '+useCurrentCurrency(product?.price||0)}</p>
                                 }
                             </div>
                             {product && product.stock > 0 ? 
                             <>
                                 <p className="text-green-500 mt-2 text-xl">IN STOCK</p>
-                                {session ? productInCart
+                                {productInCart
                                 ?
-                                    <div className="rounded-md text-white p-2 w-fit flex flex-row gap-x-2 mt-2 bg-green-500 justify-center items-center">
+                                    <div className="rounded-md text-white p-2 w-fit flex flex-row gap-x-2 mt-2 bg-green-600 justify-center items-center">
                                         <i className="fa-solid fa-check fa-lg"></i>
                                         <p className="text-base font-bold inline">Product added to cart</p>
                                     </div> 
                                 :
                                     <button disabled={saving}
                                         onClick={(e)=>addToCart(e)}
-                                        className='flex items-center px-2 disabled:bg-gray-500 disabled:hover:bg-gray-500 justify-center border-2 bg-orange-500 border-orange-400 md:hover:bg-orange-400 max-md:active:bg-orange-100 rounded-md text-white h-10'>
+                                        className='flex items-center px-2 disabled:bg-gray-500 disabled:hover:bg-gray-500 justify-center border-2 bg-orange-600 border-orange-500 md:hover:bg-orange-500 max-md:active:bg-orange-100 rounded-md text-white h-10'>
                                         Add to cart
                                     </button>
-                                : null}
+                                }
                             </>
                             : <p className="text-red-500 mt-2">OUT OF STOCK</p>
                             }
                             <div>
                                 <p className="text-gray-500 mb-2 dark:text-gray-200 border-t-2 border-b-gray-300 w-full mt-8">SERVICES</p>
                                 <div className="flex flex-col gap-y-4">
-                                    <p className="inline text-black dark:text-white"><i className="fa-solid fa-truck fa-xl text-orange-400"></i> Free delivery on orders above  Ksh 2000</p>
+                                    <p className="inline text-black dark:text-white"><i className="fa-solid fa-truck fa-xl text-orange-400"></i> Free delivery on orders above {currency?.symbol + ' ' + useCurrentCurrency(9999)}</p>
                                     <p className="inline text-black dark:text-white"><i className="fa-solid fa-file-circle-check fa-xl text-orange-400"></i> 1 year warranty</p>
                                     <p className="inline text-black dark:text-white"><i className="fa-solid fa-truck-ramp-box fa-xl text-orange-400"></i> Free returns</p>
                                 </div>
@@ -147,7 +154,8 @@ const Product: React.FC = () => {
                         <p className="text-gray-600 dark:text-gray-200 mb-4">
                             {product && product.description}
                         </p>
-                        <div style={{height:'500px'}} className="flex product-image-2 flex-row max-md:!h-auto max-md:!w-auto items-center justify-center mx-auto"><img src={`${product?.images[1].link}`} className="h-full w-full" alt={`${product?.name}`}/></div>
+                        <div style={{height:'500px'}} className="flex product-image-2 mb-14 flex-row max-md:!h-auto max-md:!w-auto items-center justify-center mx-auto"><img src={`${product?.images[1].link}`} className="h-full w-full" alt={`${product?.name}`}/></div>
+                        <div style={{height:'500px'}} className="flex product-image-2 mb-5 flex-row max-md:!h-auto max-md:!w-auto items-center justify-center mx-auto"><img src={`${product?.images[2].link}`} className="h-full w-full" alt={`${product?.name}`}/></div>
                         <h3 className="text-lg text-black mt-8 dark:text-white w-full border-b-2 mb-4 border-b-gray-300">Specifications</h3>
                         {product && Object.keys(product?.properties).map((key,index)=>{
                             return <div key={index} className="flex flex-row items-center justify-center">

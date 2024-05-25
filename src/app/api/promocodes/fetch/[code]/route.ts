@@ -56,13 +56,13 @@ export async function GET(req: NextRequest,{params}:{params:{code:string}}) {
         const promocode = await Promocode.find<PromocodeType>({code:code});
 
         if(promocode.length === 0) {
-            return new Response(JSON.stringify({'error':'Promocode does not exist'}),{status:200,headers:{
+            return new Response(JSON.stringify({'error':'Promocode does not exist'}),{status:404,headers:{
                 'Content-Type':'application/json'
             }});
         }
 
         if(new Date() >= new Date(promocode[0].validUntil)){
-            return new Response(JSON.stringify({'error':'Promocode has expired'}),{status:200,headers:{
+            return new Response(JSON.stringify({'error':'Promocode has expired'}),{status:404,headers:{
                 'Content-Type':'application/json'
             }});
         }

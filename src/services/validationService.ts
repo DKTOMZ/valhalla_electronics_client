@@ -100,4 +100,24 @@ export class ValidationService {
         confirmPasswordErrorElement.current.innerHTML = '';
         return true;
     }
+
+        /**
+     * Validate phone numbers for each country
+     * @required @param regex
+     * Regex Exp
+     * @required @param phoneNumber
+     * phoneNumber string value
+     * @required @param phoneNumberErrorElement  
+     * Element to show error for phoneNumber validation
+     */
+    validatePhoneNumbers(regex: string, phoneNumber: string, phoneNumberErrorElement: React.MutableRefObject<HTMLElement>): boolean {
+        const regexCheck = new RegExp(regex).test(phoneNumber);
+        if(!regexCheck){
+            phoneNumberErrorElement.current.innerHTML = 'Use correct phone number format for your country';
+        } else {
+            phoneNumberErrorElement.current.innerHTML = '';
+        }
+        return regexCheck;
+    }
+
 }

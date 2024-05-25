@@ -7,7 +7,6 @@ import CarouselSlider from "@/components/carousel";
 import Loading from "@/components/loading";
 import { FrontendServices } from "@/lib/inversify.config";
 import { Card } from "@/models/card";
-import { CarouselImage } from "@/models/carouselImage";
 import { Category } from "@/models/categories";
 import { Product } from "@/models/products";
 import { SectionEnum } from "@/models/sectionEnum";
@@ -56,7 +55,7 @@ const AppHome: React.FC = ()=>{
     }
 
     //Most recently 5 added products
-    const featuredProducts: Card[] = products ? products.map((product)=>{
+    const featuredProducts: Card[] = products ? products.filter((product)=>product.discount == 0).map((product)=>{
         return {
             image: product.images[0].link,
             description: '',
@@ -87,8 +86,8 @@ const AppHome: React.FC = ()=>{
             title: product.name,
             id: product._id
         }
-        listItem.price = product.price;
-        listItem.oldPrice = ((100-product.discount)/product.price) * 100;
+        listItem.price = Math.round(((100-product.discount)/100) * product.price);
+        listItem.oldPrice = product.price;
         return listItem
           
     })
@@ -117,8 +116,8 @@ const AppHome: React.FC = ()=>{
             title: product.name,
             id: product._id
         }
-        listItem.price = product.price;
-        listItem.oldPrice = ((100-product.discount)/product.price) * 100;
+        listItem.price = Math.round(((100-product.discount)/100) * product.price);
+        listItem.oldPrice = product.price;
         return listItem
               
     })
@@ -143,7 +142,7 @@ const AppHome: React.FC = ()=>{
                 <div className="mb-4">
                     <div className="h-1 w-24 bg-orange-400"></div>
                     <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-wand-sparkles text-orange-400"></i></span> FLASH SALES
-                        <a href="/pages/products" className="text-orange-500 dark:text-orange-400 md:dark:hover:text-orange-300 max-md:dark:active:text-orange-300 md:hover:text-orange-400 max-md:active:text-orange-400 ml-2 underline text-sm">See more</a>
+                        {/* <a href="/pages/products" className="text-orange-500 dark:text-orange-400 md:dark:hover:text-orange-300 max-md:dark:active:text-orange-300 md:hover:text-orange-400 max-md:active:text-orange-400 ml-2 underline text-sm">See more</a> */}
                     </h2>
                 </div>
                 <CardGrid naviagteTo="/pages/product/" items={flashSaleItems} section={SectionEnum.FLASH_SALES}/>
@@ -169,7 +168,7 @@ const AppHome: React.FC = ()=>{
                 <CardGrid naviagteTo="/pages/products/" items={gridCategories} section={SectionEnum.CATEGORIES} />
             </section>
 
-            { bestSellingItems.length > 0 ?
+            {/* { bestSellingItems.length > 0 ?
             <section id="best-selling">
                 <div className="mb-4">
                     <div className="h-1 w-24 bg-orange-400"></div>
@@ -179,7 +178,7 @@ const AppHome: React.FC = ()=>{
                 </div>
                 <CardList items={bestSellingItems} section={SectionEnum.BEST_SELLING}/>
             </section>
-            : null}
+            : null} */}
         </>
         }
 

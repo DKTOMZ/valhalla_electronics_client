@@ -15,11 +15,14 @@ import { GenericResponse } from "@/models/genericResponse";
 import Modal from "@/components/modal";
 import { profilePictureResponse } from "@/models/profilePictureResponse";
 import { CurrenciesType } from "@/models/currencies";
+import { useSharedState } from "@/app/contexts/context";
+import { StorageService } from "@/services/storageService";
 
 const User: React.FC = () => { 
     
     const http = FrontendServices.get<HttpService>('HttpService');
     const validationService = FrontendServices.get<ValidationService>('ValidationService');
+    const storage = FrontendServices.get<StorageService>('StorageService');
 
     //State variables
     const [newPassword,setNewPassword] = useState('');
@@ -33,8 +36,8 @@ const User: React.FC = () => {
     const [changePasswordSuccess,setChangePasswordSuccess] = useState(false);
     const [uploading,setUploading] = useState(false);
     const [loading,setLoading] = useState(true);
-    const [currencies,setCurrencies] = useState<CurrenciesType[]>([]);
     const [name,setName] = useState('');
+    const { updateCurrency, setInitialCurrency, currencies, setCurrencies, currency } = useSharedState();
 
     //Element refs
     const currentPasswordElement = useRef<HTMLInputElement>(null);
@@ -50,17 +53,25 @@ const User: React.FC = () => {
 
     useEffect(()=>{
         const fetchCurrencies = async() => {
-            return await http.get<CurrenciesType[]>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencies/fetch`);
-        }
-        fetchCurrencies().then(response => {
+            const response: HttpServiceResponse<CurrenciesType[]> = await http.get(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencies/fetch`);
+
             if (response.status >= 200 && response.status<=299 && response.data) {
                 setCurrencies([...response.data]);
-                setLoading(false);
+                setInitialCurrency(response.data.filter((item)=>item.shortName=='KES')[0]);
             } else {
                 //
             }
-        });
-    },[http])
+        }
+
+        if(!currencies){
+            fetchCurrencies();
+        } else {
+            if(currency){ 
+                setInitialCurrency(currencies.filter((currency)=>currency.shortName=='KES')[0]);
+            }
+        }
+        setLoading(false);
+    },[http,storage])
 
     const {data: session, status, update} = useSession();
 
@@ -105,7 +116,7 @@ const User: React.FC = () => {
             } else {
                 saveImageError.current.innerHTML = response.data.error ?? response.statusText;
             }
-
+            console.log(currencies);
             setUploading(false);
         }
 
@@ -136,7 +147,10 @@ const User: React.FC = () => {
     };
 
     const handleUpdateName = async()=>{
-        const response = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/auth/private/profile/picture/upload`,
+        if(!name){
+            return;
+        }
+        const response = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/auth/private/profile/name/edit`,
             JSON.stringify(
                 {
                     email: session?.user?.email,
@@ -145,7 +159,7 @@ const User: React.FC = () => {
             )
         );
 
-        if(response.status > 200 && response.status < 300 && response.data.success){
+        if(response.status >= 200 && response.status < 300 && response.data.success){
             const updateUser = {
                 expires: session?.expires,
                 user: {
@@ -214,21 +228,20 @@ const User: React.FC = () => {
                             <form onSubmit={(e)=>e.preventDefault()}>
                                 <div className='flex flex-col mb-3'>
                                     <label htmlFor='user-name' className='sm:text-base text-sm dark:text-white'>Name</label>
-                                    <input onBlur={()=>{
+                                    <input onBlur={()=>{ updateNameError.current.innerHTML = ''
                                     }} value={name} onChange={(e)=>setName(e.target.value)} required className='px-2 outline-0 w-full rounded-md h-10 ring-1 dark:bg-neutral-600 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2' type='text' name='user-name'/>
                                 </div>
                                 <div ref={updateNameError} className='text-red-500 text-center mb-3'></div>
                                 <FormSubmitButton text='Update Name' disabled={loadingSubmitName} callback={async()=>handleUpdateName()}/>
                             </form>
                         </Collapse>
-                        <Collapse title="Update Currency" className="sm:hidden">
-                                <div>
-                                    <select title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md w-full">
-                                    {currencies.map((currency)=>{
-                                        return <option key={currency.symbol} value={currency.name}>{currency.symbol}</option>
-                                    })}
-                                    </select>
-                                </div>
+                        <Collapse title="Update Currency" className="md:hidden">
+                                <select defaultValue={currencies.filter((item)=>item.shortName=='KES').length > 0 ? currencies.filter((item)=>item.shortName=='KES')[0].shortName : 'KES'}
+                                onChange={(e)=>updateCurrency(currencies.filter((item)=>item.shortName==e.target.value)[0])} title="Currencies" className="dark:bg-slate-800 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden">
+                                {currencies.map((currency)=>{
+                                    return <option key={currency.symbol} value={currency.shortName}>{currency.shortName}</option>
+                                })}
+                                </select>
                         </Collapse>
                     {/* eslint-disable-next-line no-prototype-builtins */}
                         {session && !session.user?.hasOwnProperty('thirdparty')
@@ -291,7 +304,7 @@ const User: React.FC = () => {
                             </form>
                         </ Collapse>
                         : null}
-                        <button type="button" onClick={async()=>await signOut({callbackUrl:'/',redirect:true})} className="text-white w-full p-2 mt-4 bg-orange-500 md:hover:bg-orange-400 max-md:active:bg-orange-400">
+                        <button type="button" onClick={async()=>await signOut({callbackUrl:'/',redirect:true})} className="text-white w-full p-2 mt-4 bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500">
                         <i className="fa-solid fa-right-from-bracket fa-lg text-white"></i> Logout
                         </button>
                 </div>

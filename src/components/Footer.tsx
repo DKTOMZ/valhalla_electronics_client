@@ -3,8 +3,8 @@ import React from "react";
 
 export const Footer: React.FC = () => {
     return (
-    <div id="footers" className="mt-4 py-2">
-        <section id="newsletter" className="mb-8 w-full h-full">
+    <div id="footers" className="mt-auto py-2">
+        <section id="newsletter" className="mb-8 w-full">
             <div className="w-full bg-orange-800 p-4 flex flex-row items-center gap-x-2">
                 <i className="fa-regular fa-newspaper text-white fa-xl"></i>
                 <p className="text-white text-base">Click <a href="" className="text-slate-200 md:hover:text-slate-100 max-md:active:text-slate-100 underline text-base">here</a> to sign up for our news letter and receive great monthly offers & discounts!</p>

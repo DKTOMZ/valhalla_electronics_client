@@ -107,7 +107,7 @@ const ChangePassword: React.FC = () => {
 
   if (verificationResponse && verificationResponse.success) {
     return <LayoutAlt>
-      <div className="h-screen sm:-mt-28 landscape:m-auto landscape:h-full max-sm:h-full flex flex-col items-center justify-center">
+      <div className="h-full sm:-mt-28 landscape:m-auto landscape:h-full max-sm:h-full flex flex-col items-center justify-center">
           <title>Valhalla - Change Password</title>
           <Logo height={120} width={120}/>
           { changePasswordSuccess ? <Modal title={'Success!'} body={'Your can now proceed to login with your new password.'} 

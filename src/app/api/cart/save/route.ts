@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
         const cartAfterUpdate = await Cart.findOne<CartType>({email: email});
 
-        return new Response(JSON.stringify({size:cartAfterUpdate?.cartItems.length}),{status:201,headers:{
+        return new Response(JSON.stringify({size:cartAfterUpdate?.cartItems.length,cart: cartAfterUpdate}),{status:201,headers:{
             'Content-Type':'application/json'
         }});
     } catch (error:any) {
