@@ -58,14 +58,14 @@ const User: React.FC = () => {
     
     
     const uploadImage = async(file: File | null | undefined) => {
-        imageField.current.innerHTML = '';
+        saveImageError.current.innerHTML = '';
 
         if(!file){ return; }
 
         const validation = await validationService.validateImage(file);
 
         if (typeof validation === 'string') {
-            imageField.current.value = validation;
+            saveImageError.current.innerHTML = validation;
         } else {
             setUploading(true);
 
@@ -167,8 +167,8 @@ const User: React.FC = () => {
                 : null}
             <title>Valhalla - User</title>
             <div className="mb-4">
-                <div className="h-1 w-24 bg-orange-400"></div>
-                <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-user text-orange-400"></i></span> USER PROFILE</h2>
+                <div className="h-1 w-24 bg-orange-500"></div>
+                <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-user text-orange-500"></i></span> USER PROFILE</h2>
             </div>
             <div className="flex flex-col items-center justify-center">
                 <div className='space-y-6 max-sm:w-full sm:max-w-sm w-3/4'>
@@ -215,8 +215,8 @@ const User: React.FC = () => {
                         <Collapse title="Update Currency" className="md:hidden">
                                 <select defaultValue={currency?.shortName || currencies.filter((item)=>item.shortName=='KES')[0].shortName}
                                 onChange={(e)=>updateCurrency(currencies.filter((item)=>item.shortName==e.target.value)[0])} title="Currencies" className="dark:bg-zinc-700 bg-slate-200 text-black dark:text-white p-2 rounded-md w-full">
-                                {currencies.map((currency)=>{
-                                    return <option key={currency.symbol} value={currency.shortName}>{currency.shortName}</option>
+                                {currencies.map((currency,index)=>{
+                                    return <option key={currency.symbol??index} value={currency.shortName}>{currency.shortName}</option>
                                 })}
                                 </select>
                         </Collapse>

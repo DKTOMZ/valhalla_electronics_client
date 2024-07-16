@@ -2,10 +2,12 @@ import {BackendServices} from "@/app/api/inversify.config";
 import { DbConnService } from "@/services/dbConnService";
 import TokenBlacklist from "@/lib/tokenBlacklistSchema";
 import appUser from "@/lib/userSchema";
-import { hash } from "bcryptjs";
+import { hash, compare } from "bcryptjs";
 import { JWTService } from "@/services/jwtService";
 import { TokenBlacklist as tokenBlacklistType } from "@/models/tokenBlacklist";
 import { UserServer } from "@/models/User";
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
+import mongoose from "mongoose";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
@@ -22,9 +24,16 @@ export async function GET() {
 */
 export async function POST(request: Request) {
 
-    await dbConnService.mongooseConnect().catch(err => new Response(JSON.stringify({error:err}),{status:503,headers:{
-        'Content-Type':'application/json'
-    }}))
+    let mongooseInstance: mongoose.Connection;
+
+    try {
+        mongooseInstance = await dbConnService.mongooseConnect();
+    }
+    catch(error:any) {
+        return    new Response(JSON.stringify({error:error}),{status:503,headers:{
+            'Content-Type':'application/json'
+        }})
+    }
 
     const body = await request.json();
 
@@ -47,7 +56,7 @@ export async function POST(request: Request) {
     const decodedToken = jwtService.decode(token);
 
     try {
-        jwtService.verify(token).then((decodedToken) => userId = decodedToken);
+        userId =  await jwtService.verify(token);
 
         const revokedToken = await TokenBlacklist.findOne<tokenBlacklistType>({tokenJti:decodedToken.jti});
 
@@ -81,17 +90,37 @@ export async function POST(request: Request) {
             'Content-Type':'application/json'
         }})}
 
+        if(!user.password){
+            return new Response(JSON.stringify({error:'Reset with the auth provider linked with this email'}),{status:400,headers:{
+                'Content-Type':'application/json'
+            }});
+        }
+
+        const isPasswordSame = await compare(password, user.password);
+
+        if(isPasswordSame){
+            return new Response(JSON.stringify({error:'New password cannot be same as current password'}),{status:400,headers:{
+                'Content-Type':'application/json'
+            }});
+        }
+
         const hashedPasword = await hash(password,12);
+
+        const session = await mongooseInstance.startSession();
+
+        session.startTransaction();
 
         try {
 
-            await appUser.updateOne({ email:user.email},{ password: hashedPasword, updated: new Date()});
+            await appUser.updateOne({ email:user.email},{ password: hashedPasword, updated: CURRENT_DATE_TIME()});
 
             await TokenBlacklist.create({
-                tokenJti: decodedToken.jti,
-                created: new Date(),
-                updated: new Date()
+                tokenJti: decodedToken.jti
             });
+
+            await session.commitTransaction();
+
+            console.log("Commit: Change Password Transaction");
 
             return new Response(JSON.stringify({success:true}),{status:201,headers:{
                 'Content-Type':'application/json'
@@ -99,10 +128,16 @@ export async function POST(request: Request) {
 
         } catch (error:any) {
 
+            await session.abortTransaction();
+
+            console.log("Rollback: Change Password Transaction");
+
             return new Response(JSON.stringify({error:error.message}),{status:503,headers:{
                 'Content-Type':'application/json'
             }});
 
+        } finally {
+            session.endSession();
         }
     }
 }

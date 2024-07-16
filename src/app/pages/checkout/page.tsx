@@ -51,7 +51,7 @@ const Checkout: React.FC = () => {
             setCurrentShipping(response.data[0]);
             setShippingRates(response.data)
         });
-    },[http, setCurrentShipping, setShippingRates])
+    },[])
 
     useEffect(()=>{
         const fetchCart = async() => {
@@ -64,7 +64,7 @@ const Checkout: React.FC = () => {
             if(response.status >= 200 && response.status < 300){
                 setCart(response.data);
                 let total = 0;
-                response.data.cartItems.forEach((item)=>total=total+item.price);
+                response.data.cartItems.forEach((item)=>total=total+parseFloat((useCurrentCurrency(item)-(item.discount*useCurrentCurrency(item)/100)).toFixed(2)));
                 setCartTotal(total);
                 setTabs([<Cart key={'cart'} userEmail={session.user?.email}/>, <Shipping key={'shipping'}/>, <Payment key={'payment'}/>]);
             } else {
@@ -83,33 +83,34 @@ const Checkout: React.FC = () => {
         currentCheckoutTab > 0 && setCartComplete(true);
 
         currentCheckoutTab > 1 && setShippingComplete(true);
-    },[appliedPromocode, cartTotal, currentCheckoutTab, http, session, setCart, setCartTotal, status]);
+    },[session]);
 
     useEffect(()=>{
         if(cart){
             let total = 0;
-            cart.cartItems.forEach((item)=>total=parseFloat((total+(item.price-(item.discount*item.price/100))).toFixed(2))); 
+            cart.cartItems.forEach((item)=>total=parseFloat((total+(useCurrentCurrency(item)-(item.discount*useCurrentCurrency(item)/100))).toFixed(2))); 
             setCartTotal(total);
         }
-    },[cart, cart?.cartItems, setCartTotal])
+    },[currency,cart])
 
     useEffect(()=>{
         if(appliedPromocode){
-            const discount = (appliedPromocode.discountPercent*(cartTotal))/100;
-            currentShipping && setShippingFee((((currentShipping.rate)/100)*(cartTotal-discount)));
+            const discount = parseFloat(((appliedPromocode.discountPercent*(cartTotal))/100).toFixed(2));
+            setDiscount(discount);
+            currentShipping && setShippingFee(parseFloat((((currentShipping.rate)/100)*(cartTotal-discount)).toFixed(2)));
         } else {
-            currentShipping && setShippingFee((((currentShipping.rate)/100)*(cartTotal)));
+            currentShipping && setShippingFee(parseFloat((((currentShipping.rate)/100)*(cartTotal)).toFixed(2)));
         }
-    },[appliedPromocode, cartTotal, currentShipping, setShippingFee])
+    },[appliedPromocode,cartTotal])
 
     const applyPromocode = async()=>{
         if(!promocode){
             return;
         }
         setLoadingPromocode(true);
-        const response = await http.get<PromocodeType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/promocodes/fetch/code=${promocode.toUpperCase()}`);
+        const response = await http.get<PromocodeType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/promocodes/fetch?code=${promocode.toUpperCase()}`);
         if(response.status >= 200 && response.status < 300 && response.data){
-            setDiscount((response.data.discountPercent*(cartTotal))/100);
+            setDiscount(parseFloat(((response.data.discountPercent*(cartTotal))/100).toFixed(2)));
             setAppliedPromocode(response.data);
         } else {
             promocodeError.current.innerHTML = response.data.error || response.statusText;
@@ -219,10 +220,10 @@ const Checkout: React.FC = () => {
                     <div className="w-1/3 max-lg:w-full max-lg:order-2">
                         <Collapse title="PROMO CODE" className="bg-white dark:bg-transparent">
                             <form onSubmit={(e)=>e.preventDefault()} className="w-full">
-                                <input readOnly={appliedPromocode!=undefined} onBlur={()=>promocodeError.current.innerHTML=''} required type="text" onChange={(e)=>setPromocode(e.target.value)} value={promocode} id="promo-code" name="promo-code" placeholder="Enter Promo Code" className="px-2 outline-0 w-full shadow-md shadow-zinc-600 dark:shadow-none rounded-md h-10 ring-1 dark:bg-neutral-700 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2" />
+                                <input readOnly={appliedPromocode!=undefined} onBlur={(e)=>promocodeError.current.innerHTML=''} required type="text" onChange={(e)=>setPromocode(e.target.value)} value={promocode} id="promo-code" name="promo-code" placeholder="Enter Promo Code" className="px-2 outline-0 w-full shadow-md shadow-zinc-600 dark:shadow-none rounded-md h-10 ring-1 dark:bg-neutral-700 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2" />
                                 <div ref={promocodeError} className='text-red-500 text-center mt-2'></div>
                                 { appliedPromocode && <div className=" text-white w-full p-2 flex flex-row gap-x-3 items-start justify-start">
-                                        <button onClick={()=>{
+                                        <button onClick={(e)=>{
                                             setAppliedPromocode(undefined);
                                             setDiscount(0);
                                             }} title="Click to remove" className="bg-red-600 p-2 text-white rounded-md">
@@ -230,34 +231,30 @@ const Checkout: React.FC = () => {
                                         </button>
                                         <div className=" flex flex-row gap-x-2 bg-green-600 p-2 text-white items-start justify-start rounded-md">
                                             <i className="fa-solid fa-check fa-lg pt-3"></i>
-                                            <div>Promo {appliedPromocode?.code} has been applied!</div>
+                                            <div>Promo {appliedPromocode?.code} has been applied! - {appliedPromocode?.discountPercent}% off</div>
                                         </div>
                                 </div>}
-                                <button disabled={loadingPromocode||appliedPromocode!=undefined} onClick={()=>applyPromocode()} type="submit" className="text-white w-full p-2 mt-4 bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 disabled:bg-gray-500 disabled:hover:bg-gray-500">Apply Code</button>
+                                <button disabled={loadingPromocode||appliedPromocode!=undefined} onClick={e=>applyPromocode()} type="submit" className="text-white w-full p-2 mt-4 bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 disabled:bg-gray-500 disabled:hover:bg-gray-500">Apply Code</button>
                             </form>
                         </Collapse>
                         <div className="bg-white dark:bg-transparent shadow-sm rounded-md shadow-zinc-700 dark:shadow-gray-200 p-4">
                             <h4 className="text-base text-black font-bold dark:text-white mb-4">ORDER SUMMARY</h4>
                             <div className="flex flex-row justify-between items-center mb-2">
                                 <p className="text-zinc-700 dark:text-gray-300 text-sm">Subtotal:</p>
-                                {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                <p className="text-base text-black dark:text-white font-bold">{`${currency?.symbol} ${useCurrentCurrency(cartTotal)}`}</p>
+                                <p className="text-base text-black dark:text-white font-bold">{`${currency?.symbol||'loading...'} ${cartTotal.toFixed(2)}`}</p>
                             </div>
                             <div className="flex flex-row justify-between items-center mb-2">
                                 <p className="text-zinc-700 dark:text-gray-300 text-sm">Discount:</p>
-                                {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                <p className="text-base text-black dark:text-white font-bold">- {`${currency?.symbol} ${useCurrentCurrency(discount)}`}</p>
+                                <p className="text-base text-black dark:text-white font-bold">- {`${currency?.symbol||'loading...'} ${discount.toFixed(2)}`}</p>
                             </div>
                             <div className="flex flex-row justify-between items-center mb-2">
                                 <p className="text-zinc-700 dark:text-gray-300 text-sm">Shipping:</p>
-                                {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                <p className="text-base text-black dark:text-white font-bold">{currentCheckoutTab >= 1 ? (shippingFee > 0 ? (currency?.symbol||'') + ' ' + useCurrentCurrency(shippingFee) : 'FREE') : 'Calculating...'}</p>
+                                <p className="text-base text-black dark:text-white font-bold">{currentCheckoutTab >= 1 ? (shippingFee > 0 ? (currency?.symbol||'loading...'||'') + ' ' + shippingFee : 'FREE') : 'Calculating...'}</p>
                             </div>
                             <hr className="border-b border-b-gray-400"/>
                             <div className="flex flex-row justify-between items-center my-4">
                                 <p className="text-lg font-bold text-black dark:text-white">Estimated Total</p>
-                                {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                <p className="text-lg font-bold text-black dark:text-white">{currentCheckoutTab == 0 ? `${currency?.symbol} ${useCurrentCurrency(cartTotal-discount)}` : `${currency?.symbol} ${useCurrentCurrency(parseFloat((cartTotal+shippingFee-discount).toFixed(2)))}`}</p>
+                                <p className="text-lg font-bold text-black dark:text-white">{currentCheckoutTab == 0 ? `${currency?.symbol||'loading...'} ${parseFloat((cartTotal-discount).toFixed(2))}` : `${currency?.symbol||'loading...'} ${parseFloat((cartTotal+shippingFee-discount).toFixed(2))}`}</p>
                             </div>
                             <hr className="border-b border-b-gray-400 mb-4"/>
                             <div ref={shippingCompleteError} className='text-red-500'></div>
@@ -273,7 +270,7 @@ const Checkout: React.FC = () => {
                                     setShippingComplete(true);
                                     window.scrollTo(0,0);
                                 }
-                            }} onBlur={()=>{
+                            }} onBlur={(e)=>{
                                 shippingCompleteError.current.innerHTML = '';
                             }} className="text-white w-full p-2 mt-4 bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500">
                                 {currentCheckoutTab === 0 ? 'Checkout' : 'Make Payment' }
@@ -298,7 +295,7 @@ const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
     const http = FrontendServices.get<HttpService>('HttpService');
     
     const [loadingRemove,setLoadingRemove] = useState<boolean>(false);
-    const [, setLoadingQuantity] = useState(false);
+    const [loadingQuantity, setLoadingQuantity] = useState(false);
     const { cart, setCart, setCartSize: updateCartSize, currency, useCurrentCurrency} = useSharedState();
 
     const handleRemoveCartItem = async(e: React.FormEvent<HTMLButtonElement>, cartItemId: string ) => {
@@ -335,36 +332,32 @@ const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
                 <h3 className="text-base text-black dark:text-white mb-4">{`CART(${cart && cart.cartItems.length ? cart.cartItems.length : 0})`}</h3>
                 <hr className="border-b border-b-gray-400 mb-4"/>
                 {cart && cart.cartItems.length > 0 && cart.cartItems.map((item)=> {
-                    return !loadingRemove ? <div key={item._id}  className="flex flex-col pb-2 mb-3 border-b border-b-zinc-800 dark:border-b-gray-200">
+                    return !loadingRemove || !loadingQuantity ? <div key={item._id}  className="flex flex-col pb-2 mb-3 border-b border-b-zinc-800 dark:border-b-gray-200">
                         <div className="flex flex-row gap-x-4">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <div className="max-lg:!w-20 max-lg:!h-20" style={{width:'130px', height:'130px'}}><img className={`w-full h-full object-cover`} src={`${item.images[0].link}`}  alt={`${item.name}`}/></div>
                             <div>
                                 <h3 className="text-base text-black dark:text-white">{item.name}</h3>
-                                {!final ? <p className="text-md text-green-500">IN STOCK</p> : null }
-                                {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                <p className="text-lg text-gray-700 dark:text-gray-300 font-bold">{`${currency?.symbol} ${useCurrentCurrency(item.price-(item.price*item.discount/100))}`}</p>
+                                {!final ? item.stock > 0 ? <p className="text-md text-green-600">IN STOCK</p> : <p className="text-md text-red-500">OUT OF STOCK</p> : null }
+                                <p className="text-lg text-gray-700 dark:text-gray-300 font-bold">{`${currency?.symbol||'loading...'} ${(useCurrentCurrency(item)-(useCurrentCurrency(item)*item.discount/100)).toFixed(2)}`}</p>
                                 {final ? <p className="text-gray-700 dark:text-gray-300 text-base">Qty: {item.quantityInCart}</p> : null}
                             </div>
                         </div>
-                        {!final ? <div className="flex flex-row justify-between items-center mt-2 cart-controls">
+                        {!final && item.stock > 0 ? <div className="flex flex-row justify-between items-center mt-2 cart-controls">
                         <button onClick={(e)=>handleRemoveCartItem(e, item._id)} className="text-white text-sm bg-orange-600 p-2 rounded-md md:hover:bg-orange-500 max-md:active:bg-orange-500"><i className="fa-regular fa-trash-can"></i> REMOVE
                         </button>
                         <div className="flex flex-row items-center">
-                            <button onClick={async()=>{
+                            <button onClick={async(e)=>{
                                 if(item.quantityInCart != undefined && item.quantityInCart > 1){
-                                    const curr = [...cart.cartItems];
-                                    const currItem = curr.find((i)=>i._id==item._id);
-                                    if(currItem && currItem.quantityInCart){
-                                        const old = currItem.quantityInCart;
-                                        currItem.quantityInCart -= 1;
-                                        currItem.price = (currItem.price/old) * currItem.quantityInCart;
-                                        const index = curr.indexOf(currItem);
-                                        curr[index] = currItem;
+                                    const cartItems = cart.cartItems.map((i)=>({...i}));
+                                    const existingItem = cartItems.find((i)=>i._id==item._id);
+                                    if(existingItem && existingItem.quantityInCart){
+                                        const oldUnitPrice = parseInt((existingItem.price/existingItem.quantityInCart).toFixed(2));
+                                        existingItem.price = oldUnitPrice * (existingItem.quantityInCart-1);
+                                        existingItem.quantityInCart -= 1;
                                         setLoadingQuantity(true);
                                         const response = await http.post<CartType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/edit`,JSON.stringify({
                                             userEmail: userEmail,
-                                            cartItems: curr
+                                            cartItems: cartItems
                                         }));
                                         if(response.status == 200 && response.data){
                                             setCart(response.data);
@@ -375,20 +368,18 @@ const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
                             
                             }} className="bg-orange-600 text-white text-2xl px-2 shadow-sm shadow-zinc-700 rounded-md md:hover:bg-orange-500 max-md:active:bg-orange-500"> -</button>
                             <div className="w-10 text-center text-black dark:text-white">{item.quantityInCart}</div>
-                            <button onClick={async()=>{
+                            <button onClick={async(e)=>{
                                 if(item.quantityInCart != undefined && item.quantityInCart < item.stock){
-                                    const curr = [...cart.cartItems];
-                                    const currItem = curr.find((i)=>i._id==item._id);
-                                    if(currItem && currItem.quantityInCart){
-                                        const old = currItem.quantityInCart;
-                                        currItem.quantityInCart += 1;
-                                        currItem.price = (currItem.price/old) * currItem.quantityInCart;
-                                        const index = curr.indexOf(currItem);
-                                        curr[index] = currItem;
+                                    const cartItems = cart.cartItems.map((i)=>({...i}));
+                                    const existingItem = cartItems.find((i)=>i._id==item._id);
+                                    if(existingItem && existingItem.quantityInCart){
+                                        const oldUnitPrice = parseInt((existingItem.price/existingItem.quantityInCart).toFixed(2));
+                                        existingItem.price = oldUnitPrice * (existingItem.quantityInCart+1);
+                                        existingItem.quantityInCart += 1;
                                         setLoadingQuantity(true);
                                         const response = await http.post<CartType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/cart/edit`,JSON.stringify({
                                             userEmail: userEmail,
-                                            cartItems: curr
+                                            cartItems: cartItems
                                         }));
                                         if(response.status == 200 && response.data){
                                             setCart(response.data);
@@ -415,39 +406,38 @@ interface shippingOption {
 
 const Shipping: React.FC = () => {
 
-    const { useCurrentCurrency, currency, cart,
-        setShippingFee, cartTotal, shippingRates, setCurrentShipping, currentShipping, appliedPromocode
+    const { useCurrentCurrency, currency, cart, shippingFee, setShippingFee, cartTotal, shippingRates, setCurrentShipping, currentShipping, appliedPromocode
     } = useSharedState();
 
     useEffect(()=>{
         if(appliedPromocode){
-            const discount = (appliedPromocode.discountPercent*(cartTotal))/100;
+            const discount = parseFloat(((appliedPromocode.discountPercent*(cartTotal))/100).toFixed(2));
             setShippingOptions(shippingRates.map((rate)=>{
-                return {text: rate.name, price: (((rate.rate)/100)*(cartTotal-discount))}
+                return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal-discount)).toFixed(2))}
             }));
             const found = shippingRates.find((s)=>s.name==currentShipping?.name);
             if(found){
-                setShippingFee(((found.rate)/100)*(cartTotal-discount));
+                setShippingFee(parseFloat((((found.rate)/100)*(cartTotal-discount)).toFixed(2)));
             }
         } else {
             setShippingOptions(shippingOptionsCopy);
             const found = shippingRates.find((s)=>s.name==currentShipping?.name);
             if(found){
-                setShippingFee(((found.rate)/100)*(cartTotal));
+                setShippingFee(parseFloat((((found.rate)/100)*(cartTotal)).toFixed(2)));
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[appliedPromocode, cartTotal, currentShipping?.name, setShippingFee, shippingRates])
+
+    },[appliedPromocode,cartTotal])
 
     const [shippingOptions, setShippingOptions] = useState<shippingOption[]>(
-    shippingRates.map((rate)=>{
-        return {text: rate.name, price: (((rate.rate)/100)*cartTotal)}
+        shippingRates.map((rate)=>{
+            return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal)).toFixed(2))}
     }));
 
-    const [shippingOptionsCopy] = useState<shippingOption[]>(
+    const [shippingOptionsCopy, setShippingOptionsCopy] = useState<shippingOption[]>(
         shippingRates.map((rate)=>{
-            return {text: rate.name, price: (((rate.rate)/100)*cartTotal)}
-        }));
+            return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal)).toFixed(2))}
+    }));
 
     return (
         <>
@@ -456,7 +446,6 @@ const Shipping: React.FC = () => {
             <hr className="border-b border-b-gray-400 mb-4"/>
             {cart?.cartItems.map((item,index)=>{
                 return  <div key={index} className="flex flex-row gap-x-4 mb-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                 <div className="max-lg:!w-20 max-lg:!h-20" style={{width:'120px', height:'120px'}}><img className="w-full h-full" src={`${item.images[0].link}`}  alt={''}/></div>
                 <div>
                     <h3 className="text-xl text-black dark:text-white">{item.name}</h3>
@@ -472,8 +461,7 @@ const Shipping: React.FC = () => {
                                     found && setCurrentShipping(found);
                                     setShippingFee(parseFloat(e.target.value));
                         }} className="w-5 h-5" />
-                        {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                        <p className="text-black dark:text-white inline ml-2 text-base">{option.text}<span className="font-bold ml-2 text-lg text-black dark:text-white">{option.price == 0 ? 'FREE' : (currency?.symbol||'')+' '+useCurrentCurrency(option.price) }</span></p>
+                        <p className="text-black dark:text-white inline ml-2 text-base">{option.text}<span className="font-bold ml-2 text-lg text-black dark:text-white">{option.price == 0 ? 'FREE' : (currency?.symbol||'loading...'||'')+' '+option.price }</span></p>
                     </label> 
                 })}
             </div>
@@ -497,10 +485,10 @@ const Payment: React.FC = () => {
     const validationService = FrontendServices.get<ValidationService>('ValidationService');
     const http = FrontendServices.get<HttpService>('HttpService');
 
-    const { useCurrentCurrency, currency, cart, shippingFee, cartTotal,
+    const { useCurrentCurrency, currency, cart, shippingFee, setShippingFee, cartTotal,
         countryName, setCountryName, firstName, setFirstName, lastName, setLastName,
         phoneNumber, setPhoneNumber, phoneCode, setPhoneCode, address, setAddress, 
-        city, setCity, postalCode, setPostalCode, useStripe, currentShipping,
+        city, setCity, postalCode, setPostalCode, useStripe, currencyRates, currentShipping,
         appliedPromocode
      } = useSharedState();
 
@@ -509,7 +497,7 @@ const Payment: React.FC = () => {
         {text: 'Pay with M-PESA', value: 'M-PESA'}
     ]);
 
-    const [paymentOptionsCopy] = useState<paymentOption[]>([
+    const [paymentOptionsCopy, setPaymentOptionsCopy] = useState<paymentOption[]>([
         {text: 'Pay with Stripe', value: 'STRIPE'},
         {text: 'Pay with M-PESA', value: 'M-PESA'}
     ]);
@@ -531,27 +519,26 @@ const Payment: React.FC = () => {
             // paymentOptions.filter((option)=>option.value=='M-PESA').length == 0
             // && setPaymentOptions([...paymentOptions, {text: 'Pay with M-PESA', value: 'M-PESA'}])
         }
-    },[currency, paymentOptionsCopy])
+    },[currency])
 
     useEffect(()=>{
         const countrycurr = countryPhoneNumbers.filter((country)=>country.countryName.toLowerCase()==countryName.toLowerCase());
         paymentOption == 'M-PESA ' && validationService.validatePhoneNumbers(countrycurr[0].regexPattern,phoneCode+phoneNumber,phoneNumberError);
     },
-    [countryName, paymentOption, phoneCode, phoneNumber, validationService])
+    [phoneCode])
 
     const handleStripeCheckout = async() => {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
         const stripe = await useStripe();
         if(!stripe){
             stripeError.current.innerHTML = 'Failed to connect to stripe';
             return;
         } else {
-            setLoadingStripe(true);
 
-            cart?.cartItems.forEach((item)=>{
-                // eslint-disable-next-line react-hooks/rules-of-hooks
-                item.price = useCurrentCurrency(item.price);
-            })
+            if(!cart){
+                return stripeError.current.innerHTML = 'Cart seems to be empty';
+            }
+
+            setLoadingStripe(true);
 
             let data : {
                 cart: CartType | null,
@@ -561,19 +548,16 @@ const Payment: React.FC = () => {
                 cartTotal: number,
                 promocode?: PromocodeType
             } = {
-                cart: cart,
+                cart: {...cart, cartItems: cart.cartItems.map((i)=>({...i, price: useCurrentCurrency(i)}))},
                 shippingId: currentShipping?._id,
-                // eslint-disable-next-line react-hooks/rules-of-hooks
-                shippingFee: useCurrentCurrency(shippingFee),
+                shippingFee: shippingFee,
                 currency: currency,
-                // eslint-disable-next-line react-hooks/rules-of-hooks
-                cartTotal: useCurrentCurrency(cartTotal),
+                cartTotal: cartTotal,
             }
             if(appliedPromocode){
                 data.promocode = appliedPromocode;
-                let total = cartTotal - (appliedPromocode.discountPercent*(cartTotal))/100;
-                // eslint-disable-next-line react-hooks/rules-of-hooks
-                data.cartTotal = useCurrentCurrency(total);
+                let total = cartTotal - appliedPromocode.discountPercent*cartTotal/100;
+                data.cartTotal = total;
             }
             
             const response = await http.post<{stripeSession: Stripe.Response<Stripe.Checkout.Session>, error?: string}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/payment/stripe/session`,
@@ -591,9 +575,9 @@ const Payment: React.FC = () => {
         }
     };
 
-    // const handleMPESACheckout = () => {
-    //
-    // };
+    const handleMPESACheckout = () => {
+
+    };
 
     return (
         <>
@@ -681,8 +665,8 @@ const Payment: React.FC = () => {
                         </div>
                         : 
                         <div>
-                            <div onBlur={()=>stripeError.current.innerHTML = ''} ref={stripeError} className='text-red-500'></div>
-                            <button disabled={loadingStripe} onClick={()=>handleStripeCheckout()} className="text-white w-full p-2 mt-4 text-lg bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 disabled:bg-gray-500 disabled:hover:bg-gray-500">
+                            <div onBlur={(e)=>stripeError.current.innerHTML = ''} ref={stripeError} className='text-red-500'></div>
+                            <button disabled={loadingStripe} onClick={(e)=>handleStripeCheckout()} className="text-white w-full p-2 mt-4 text-lg bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 disabled:bg-gray-500 disabled:hover:bg-gray-500">
                                 <i className="fa-brands fa-cc-stripe fa-lg"></i> CHECKOUT
                             </button>
                         </div>}

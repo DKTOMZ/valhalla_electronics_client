@@ -28,6 +28,15 @@
     width: 500px;
 }
 
+.hide-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  
+.hide-scroll {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
 @media(max-width: 280px){
     .custom-search-icon {
         display: none;
@@ -107,15 +116,11 @@
         gap: 8px 0;
     }
     .order-card div {
-        display: inline-block !important;
-    }
-    .order-card :last-child {
-        float: right;
-        vertical-align: top;
-    }
-    .order-card :first-child {
-        margin-right: 2px;
-        vertical-align: top;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: start;
+        gap: 4px;
+        overflow: hidden;
     }
 
 }

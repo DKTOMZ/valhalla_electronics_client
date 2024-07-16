@@ -1,3 +1,4 @@
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
 import mongoose from "mongoose";
 
 /**
@@ -15,12 +16,12 @@ const cartSchema = new mongoose.Schema({
     created: {
         type: Date,
         required: false,
-        default: new Date()
+        default: CURRENT_DATE_TIME()
     },
     updated: {
         type: Date,
         required: false,
-        default: new Date()
+        default: CURRENT_DATE_TIME()
     }
 },{ versionKey: false });
 

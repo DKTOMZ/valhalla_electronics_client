@@ -15,7 +15,7 @@ export const runSnow = () => {
         skew = Math.max(0.8, skew - 0.001);
 
     confetti({
-        particleCount: 1,
+        particleCount: 2,
         startVelocity: 1,
         ticks: ticks,
         origin: {

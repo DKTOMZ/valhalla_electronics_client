@@ -5,6 +5,7 @@ import { getToken } from "next-auth/jwt";
 import { Product } from "@/models/products";
 import { Cart as CartType} from "@/models/cart";
 import Cart from "@/lib/cartSchema";
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
@@ -69,9 +70,7 @@ export async function POST(req: NextRequest) {
         if (!existingCart) {
             await Cart.create({
                 email: email,
-                cartItems: [cartItem],
-                created: new Date(),
-                updated: new Date()
+                cartItems: [cartItem]
             });
 
             return new Response(JSON.stringify({size:1}),{status:201,headers:{
@@ -87,7 +86,7 @@ export async function POST(req: NextRequest) {
             }});
         }
 
-        await Cart.updateOne({email:email,cartItems:[...existingCart.cartItems, cartItem], updated: new Date()});
+        await Cart.updateOne({email:email,cartItems:[...existingCart.cartItems, cartItem], updated: CURRENT_DATE_TIME()});
 
         const cartAfterUpdate = await Cart.findOne<CartType>({email: email});
 

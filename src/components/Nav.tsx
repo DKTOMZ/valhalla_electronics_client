@@ -44,6 +44,19 @@ const Nav: React.FC = () => {
     ];
 
     useEffect(() => {
+        if (showOptions) {
+          document.body.style.overflowY = 'hidden';
+          menuBarRef ? menuBarRef.current.focus() : null
+        } else {
+          document.body.style.overflowY = 'auto';
+        }
+        // Cleanup function to reset overflow when component unmounts
+        return () => {
+          document.body.style.overflow = 'auto';
+        };
+      }, [showOptions]);
+
+    useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
     
           if (menuBarRef && showOptions && !menuBarRef.current.contains(event.target as Node)) {
@@ -169,7 +182,8 @@ const Nav: React.FC = () => {
         });
 
         setLoading(false);
-    },[http,session,storage,categories.length,currencies.length,currencyRates.length,setCart,setCartSize,setCategories,setCurrencies,setCurrencyRates,setInitialCurrency]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[http,session]);
 
 
     useEffect(() => {
@@ -249,10 +263,10 @@ const Nav: React.FC = () => {
                                 <div className="md:hidden">
                                     <button title="menu bar" onClick={()=>setShowOptions(true)}><i className="fa-solid fa-bars fa-xl"></i></button>
                                     <div className={`fixed pointer-events-auto inset-0 bg-neutral-800 opacity-20 dark:bg-gray-400 -z-10 ${showOptions ? 'w-screen h-screen ease-in-out' : 'overflow-hidden w-0' } `}></div>
-                                    <div ref={menuBarRef} className={`${showOptions ? 'w-full h-screen ease-in-out' : 'overflow-hidden w-0' } fixed transition-width duration-300 inset-0 rounded-md top-0 dark:bg-zinc-800 bg-gray-100 text-black dark:text-white`}>
+                                    <div ref={menuBarRef} className={`${showOptions ? 'w-full h-screen ease-in-out' : 'overflow-hidden w-0' } fixed overflow-y-scroll hide-scroll transition-width duration-300 inset-0 rounded-md top-0 dark:bg-zinc-800 bg-gray-100 text-black dark:text-white`}>
                                         <div className="flex flex-row justify-between">
                                             <h2 className="text-lg font-bold p-2"><i className="fa-solid fa-bars-staggered mr-2"></i>Quick menu</h2>
-                                            <button onClick={()=>{setShowOptions(false)}} className="mr-5" title="Close Menu">
+                                            <button onClick={()=>{setShowOptions(false)}} className="mr-2" title="Close Menu">
                                                 <i className="fa-solid fa-x fa-xl text-black dark:text-white"></i>
                                             </button>
                                         </div>
@@ -272,7 +286,7 @@ const Nav: React.FC = () => {
                              <button title="user" onClick={()=>router.push('/pages/user')} className="max-md:hidden">
                                 <i className="fa-solid fa-user fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-500"></i>
                              </button> }
-                            <button onClick={()=>router.push('/pages/orders')} title="orders" className="max-md:hidden"><i className="fa-solid fa-bars-progress fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-500"></i></button>
+                            {session ? <button onClick={()=>router.push('/pages/orders')} title="orders" className="max-md:hidden"><i className="fa-solid fa-bars-progress fa-xl md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500 text-orange-500"></i></button> : null}
                             <button onClick={()=>router.push('/pages/checkout')} title="cart" className="relative">
                                 <i className="fa-solid fa-cart-arrow-down fa-xl"></i>
                                 <div className="absolute pl-1 -top-5 text-black dark:text-white w-full text-center">{cartSize}</div>
@@ -280,8 +294,8 @@ const Nav: React.FC = () => {
                             {currencies.length > 0 ? 
                             <select defaultValue={currency?.shortName || currencies.filter((item)=>item.shortName=='KES')[0].shortName}
                              onChange={(e)=>updateCurrency(currencies.filter((item)=>item.shortName==e.target.value)[0])} title="Currencies" className="dark:bg-zinc-700 bg-slate-200 text-black dark:text-white p-2 rounded-md max-md:hidden">
-                                {currencies.map((currency)=>{
-                                    return <option key={currency.symbol} value={currency.shortName}>{currency.shortName}</option>
+                                {currencies.map((currency,index)=>{
+                                    return <option key={currency.symbol??index} value={currency.shortName}>{currency.shortName}</option>
                                 })}
                             </select>
                             : null}

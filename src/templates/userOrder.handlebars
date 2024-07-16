@@ -2,7 +2,7 @@
     <img src="https://www.dropbox.com/scl/fi/gn5ai3y8pjzw4jvszvvxp/valhalla_email_logo.jpg?rlkey=4v020ehqywa31h4yr0h6x0puj&raw=1" height="110" width="100" alt="logo"/>
     <h1>Order Confirmed</h1>
     <p style="margin-bottom: 40px;">Hi, {{customerName}}. Thank you for shopping with us. Please find your order details below. You will reveive an email when your order is dispatched.</p>
-    <p style="margin-bottom: 40px;">Feel free to <a style="color: #FF6600" href="mailto: {{siteEmail}}">contact us</a> asap, if you need to make changes to your order.</p>
+    <p style="margin-bottom: 40px;">Feel free to <a style="color: #FF6600" href="mailto: {{siteEmail}}">contact us</a> asap, for enquiries.</p>
     <p style="margin-bottom: 40px;">We ship all items as soon as they're ready, so there's a chance you may receive more than one shipment.</p>
     <p style="margin-bottom: 40px;">Remember to save this email until you've received everything in your order.</p>
     <div><strong>Order Reference: </strong><p style="color: #414141; font-size:14px;">{{orderId}}</p></div>
@@ -51,7 +51,7 @@
         <p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Sub-Total: {{currency}} {{subTotal}}</p>
         <p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Shipping: {{shipping}}</p>
         {{#if promocode}}
-            <p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Applied Promocode: {{promocode}}</p>
+            <!--<p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Applied Promocode: {{promocode}}</p>-->
             <p style="padding: 0 5px; color: #414141; font-size: 14px; font-weight: bold;">Promocode Discount: {{currency}} {{discount}}</p>
         {{else}}
         {{/if}}

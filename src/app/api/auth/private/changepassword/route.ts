@@ -2,6 +2,7 @@ import {BackendServices} from "@/app/api/inversify.config";
 import appUser from "@/lib/userSchema";
 import { UserServer } from "@/models/User";
 import { DbConnService } from "@/services/dbConnService";
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
 import { compare, hash } from "bcryptjs";
 import { getToken } from "next-auth/jwt";
 
@@ -109,7 +110,7 @@ export async function POST(req: any) {
 
         try {
 
-            await appUser.updateOne({ email:user.email},{ password: hashedPasword, updated: new Date()});
+            await appUser.updateOne({ email:user.email},{ password: hashedPasword, updated: CURRENT_DATE_TIME()});
 
             return new Response(JSON.stringify({success:true}),{status:201,headers:{
                 'Content-Type':'application/json'

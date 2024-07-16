@@ -27,7 +27,7 @@ const Product: React.FC = () => {
 
     useEffect(()=>{
         const fetchProduct = async() => {
-            return await http.get<ProductType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/products/fetch/id=${encodeURIComponent(productId || '')}`);
+            return await http.get<ProductType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/products/fetch?id=${encodeURIComponent(productId || '')}`);
         }
 
         const fetchCart = async() => {
@@ -58,7 +58,7 @@ const Product: React.FC = () => {
             }
         });
 
-    },[http,productId, session])
+    },[productId, session])
 
     const addToCart = async(e: React.FormEvent<HTMLButtonElement>) => {
         if(!session){
@@ -121,13 +121,13 @@ const Product: React.FC = () => {
                                     product && product.discount > 0 ? 
                                         <>
                                             {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                            <div className="font-bold text-xl text-black dark:text-white">{<p className="font-bold text-xl text-black dark:text-white">{((currency?.symbol||'')+' '+useCurrentCurrency((100-product.discount)/100 * product.price).toFixed(2))}</p>}</div>
+                                            <div className="font-bold text-xl text-black dark:text-white">{<p className="font-bold text-xl text-black dark:text-white">{((currency?.symbol||'loading...'||'')+' '+((100-product.discount)/100 * useCurrentCurrency(product)).toFixed(2))}</p>}</div>
                                             {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                            <p className="font-bold line-through text-base text-gray-500 dark:text-gray-300">{(currency?.symbol||'')+' '+useCurrentCurrency(product?.price||0)}</p>
+                                            <p className="font-bold line-through text-base text-gray-500 dark:text-gray-300">{(currency?.symbol||'loading...'||'')+' '+useCurrentCurrency(product)}</p>
                                             <p className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{`${product.discount}% off`}</p>
                                         </>
                                         // eslint-disable-next-line react-hooks/rules-of-hooks
-                                    : <p className="font-bold text-xl text-black dark:text-white">{(currency?.symbol||'')+' '+useCurrentCurrency(product?.price||0)}</p>
+                                    : <p className="font-bold text-xl text-black dark:text-white">{(currency?.symbol||'loading...'||'')+' '+(product && useCurrentCurrency(product))}</p>
                                 }
                             </div>
                             {product && product.stock > 0 ? 
@@ -160,8 +160,7 @@ const Product: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-x-4 items-start dark:bg-transparent bg-white shadow-zinc-700 dark:shadow-slate-300 shadow-sm rounded-md p-4">
                         <h3 className="text-xl text-black dark:text-white w-full border-b-2 mb-4 border-b-gray-300">Product Details</h3>
-                        <p className="text-gray-600 dark:text-gray-200 mb-4">
-                            {product && product.description}
+                        <p dangerouslySetInnerHTML={{__html: product?.description.replace(/(:|\.)/g, '$1<br/>') ?? ''}} className="text-gray-600 dark:text-gray-200 mb-4">
                         </p>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <div style={{height:'500px'}} className="flex product-image-2 mb-14 flex-row max-md:!h-auto max-md:!w-auto items-center justify-center mx-auto"><img src={`${product?.images[1].link}`} className="h-full w-full" alt={`${product?.name}`}/></div>

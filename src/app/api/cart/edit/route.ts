@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import Cart from "@/lib/cartSchema";
 import { Cart as CartType } from "@/models/cart";
 import { Product } from "@/models/products";
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
@@ -40,9 +41,9 @@ export async function POST(req: NextRequest) {
         'Content-Type':'application/json'
     }}));
 
-    try {
+    try {            
 
-        await Cart.updateOne({email: userEmail}, {cartItems : cartItems, updated: new Date()});
+        await Cart.updateOne({email: userEmail}, {cartItems : cartItems, updated: CURRENT_DATE_TIME()});
 
         const updatedCart = await Cart.findOne<CartType>({email:userEmail});
 

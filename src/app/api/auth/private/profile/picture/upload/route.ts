@@ -2,6 +2,7 @@ import {BackendServices} from "@/app/api/inversify.config";
 import appUser from "@/lib/userSchema";
 import { UserServer } from "@/models/User";
 import { DbConnService } from "@/services/dbConnService";
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
 import { PutObjectCommand, S3 } from "@aws-sdk/client-s3";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
@@ -152,7 +153,7 @@ export async function POST(req: NextRequest) {
             
             await saveFileToS3(userExists);
 
-            await appUser.updateOne({email:email},{image:imageLink.link, updated: new Date()});
+            await appUser.updateOne({email:email},{image:imageLink.link, updated: CURRENT_DATE_TIME()});
 
             return new Response(JSON.stringify({
                 image: imageLink.link,

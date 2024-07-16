@@ -21,7 +21,7 @@ const ChangePassword: React.FC = () => {
   const validationService = FrontendServices.get<ValidationService>('ValidationService');
 
   //token
-    const [token,setToken] = useState<string>("");
+    const [token,setToken] = useState(useSearchParams().get("token"));
   
   //Http request handling
   const [loadingSubmit,setLoadingSubmit] = useState(false);
@@ -46,13 +46,13 @@ const ChangePassword: React.FC = () => {
   //handle verificationResponse fetching
   useEffect(()=>{
     const fetchVerificationResponse = async () => {
-        return await http.get<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/confirm/resetpassword/verify/token=${token}`);
+        return await http.get<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/confirm/resetpassword/verify?token=${token}`);
     }
     fetchVerificationResponse().then(response => {
         setverificationResponse(response.data);
         setLoading(false);
     });
-  },[http, token]);
+  },[token]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -67,14 +67,6 @@ const ChangePassword: React.FC = () => {
     mediaQuery.removeEventListener('change',handleChange);
     };
   }, []);
-
-  //Incoming params
-    const tokenParam = useSearchParams().get("token");
-    if (!tokenParam) {
-        return <ErrorPage title="Error: 404" error="Invalid Link." />;
-    } else {
-        setToken(tokenParam);
-    }
 
   //handle form submission
   const handleSubmit = async(e: React.FormEvent<HTMLFormElement>) => {
@@ -99,6 +91,10 @@ const ChangePassword: React.FC = () => {
 
     setLoadingSubmit(false);
   
+  }
+
+  if(!token) {
+    return <ErrorPage title="Error: 404" error="Invalid link." />;
   }
 
   if (loading) {

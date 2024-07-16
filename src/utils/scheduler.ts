@@ -4,153 +4,77 @@ import { HttpService } from '@/services/httpService';
 import { GenericResponse } from '@/models/genericResponse';
 import cron from 'node-cron';
 import { FrontendServices } from '@/lib/inversify.config';
+import { CurrencyRateType } from '@/models/currencyRate';
+import { CURRENT_DATE_TIME } from './currentDateTime';
 
-//const { FrontendServices } : { FrontendServices: Container } = require('@/lib/inversify.config');
+const convertAndUpdateCurrency = async (http: HttpService, fromType: string, toType: string): Promise<boolean> => {
+    try {
+        const response = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
+            JSON.stringify({
+                fromValue: 1,
+                fromType,
+                toType
+            })
+        );
 
-const scheduler = async() => {
+        if (response.status === 200 && response.data) {
+            const updateCurrencyResponse = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/edit`, 
+                JSON.stringify({
+                    from: fromType,
+                    to: toType,
+                    rate: response.data['result-float']
+                })
+            );
+            if (updateCurrencyResponse.status === 200) {
+                return true;
+            } else {
+                console.log(updateCurrencyResponse.data.error);
+            }
+        } else {
+            console.log(response.data.error);
+        }
+    } catch (error) {
+        console.error(`Error updating currency from ${fromType} to ${toType}:`, error);
+    }
+    return false;
+};
 
+const scheduler = async () => {
     const http = FrontendServices.get<HttpService>('HttpService');
-    let updatedCurrencies = 0;
-    
-    const response = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
-        JSON.stringify({
-        fromValue: 1,
-        fromType: 'USD',
-        toType: 'KES'
-        })
-    );
-    
-    if(response.status == 200 && response.data ){
-        const updateCurrencyResponse = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/edit`,JSON.stringify({
-            from: 'USD',
-            to: 'KES',
-            rate: response.data['result-float']
-        }));
-        if(updateCurrencyResponse.status == 200){
-            updatedCurrencies++;
-        } else {
-            console.log(updateCurrencyResponse.data.error);
-        }
-    } else {
-        console.log(response.data.error);
-    }
+    // const currenciesToUpdate = [
+    //     { from: 'USD', to: 'KES' },
+    //     { from: 'USD', to: 'GBP' },
+    //     { from: 'KES', to: 'USD' },
+    //     { from: 'KES', to: 'GBP' },
+    //     { from: 'GBP', to: 'KES' },
+    //     { from: 'GBP', to: 'USD' }
+    // ];
 
-    const response2 = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
-    JSON.stringify({
-    fromValue: 1,
-    fromType: 'USD',
-    toType: 'GBP'
-    })
-    );
-    
-    if(response2.status == 200 && response2.data ){
-        const updateCurrencyResponse = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/edit`,JSON.stringify({
-            from: 'USD',
-            to: 'GBP',
-            rate: response2.data['result-float']
-        }));
-        if(updateCurrencyResponse.status == 200){
-            updatedCurrencies++;
-        } else {
-            console.log(updateCurrencyResponse.data.error);
-        }
-    } else {
-        console.log(response2.data.error);
-    }
+    try {
+        let currenciesToUpdate;
 
-    const response3 = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
-    JSON.stringify({
-    fromValue: 1,
-    fromType: 'KES',
-    toType: 'USD'
-    })
-    );
-    
-    if(response3.status == 200 && response3.data ){
-        const updateCurrencyResponse = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/edit`,JSON.stringify({
-            from: 'KES',
-            to: 'USD',
-            rate: response3.data['result-float']
-        }));
-        if(updateCurrencyResponse.status == 200){
-            updatedCurrencies++;
-        } else {
-            console.log(updateCurrencyResponse.data.error);
-        }
-    } else {
-        console.log(response3.data.error);
-    }
+        const response = await http.get<CurrencyRateType[]>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/fetch`);
 
-    const response4 = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
-    JSON.stringify({
-    fromValue: 1,
-    fromType: 'KES',
-    toType: 'GBP'
-    })
-    );
-    
-    if(response4.status == 200 && response4.data ){
-        const updateCurrencyResponse = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/edit`,JSON.stringify({
-            from: 'KES',
-            to: 'GBP',
-            rate: response4.data['result-float']
-        }));
-        if(updateCurrencyResponse.status == 200){
-            updatedCurrencies++;
-        } else {
-            console.log(updateCurrencyResponse.data.error);
-        }
-    } else {
-        console.log(response4.data.error);
-    }
+        currenciesToUpdate = response.data.map((r)=>{
+            return {
+                from: r.from,
+                to: r.to
+            }
+        });
+        
+        let updatedCurrencies = 0;
 
-    const response5 = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
-    JSON.stringify({
-    fromValue: 1,
-    fromType: 'GBP',
-    toType: 'KES'
-    })
-    );
-    
-    if(response5.status == 200 && response5.data ){
-        const updateCurrencyResponse = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/edit`,JSON.stringify({
-            from: 'GBP',
-            to: 'KES',
-            rate: response5.data['result-float']
-        }));
-        if(updateCurrencyResponse.status == 200){
-            updatedCurrencies++;
-        } else {
-            console.log(updateCurrencyResponse.data.error);
+        for (const { from, to } of currenciesToUpdate) {
+            if (await convertAndUpdateCurrency(http, from, to)) {
+                updatedCurrencies++;
+            }
         }
-    } else {
-        console.log(response5.data.error);
-    }
-
-    const response6 = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
-    JSON.stringify({
-    fromValue: 1,
-    fromType: 'GBP',
-    toType: 'USD'
-    })
-    );
     
-    if(response6.status == 200 && response6.data ){
-        const updateCurrencyResponse = await http.post<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currencyRates/edit`,JSON.stringify({
-            from: 'GBP',
-            to: 'USD',
-            rate: response6.data['result-float']
-        }));
-        if(updateCurrencyResponse.status == 200){
-            updatedCurrencies++;
-        } else {
-            console.log(updateCurrencyResponse.data.error);
-        }
-    } else {
-        console.log(response6.data.error);
+        console.log(`${updatedCurrencies} Currencies refreshed at:`, CURRENT_DATE_TIME());
+    } catch (error:any) {
+        console.log("Failed to fetch existing currencyRates from database: " + error);
     }
-
-    console.log(`${updatedCurrencies} Currencies refreshed at:`, new Date());
+    
 };
 
 const job = cron.schedule('0 0 * * *', scheduler); // Runs everyday at 12 AM

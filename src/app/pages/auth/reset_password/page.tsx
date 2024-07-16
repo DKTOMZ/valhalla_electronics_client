@@ -70,7 +70,7 @@ const ResetPassword = () => {
 
         setLoadingSubmit(true);
 
-        const response: HttpServiceResponse<GenericResponse> = await http.get(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/confirm/resetpassword/email=${email}`);
+        const response: HttpServiceResponse<GenericResponse> = await http.get(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/confirm/resetpassword?email=${email}`);
 
         if (response.data.success) {
             setResetPasswordSuccess(response.data.success);

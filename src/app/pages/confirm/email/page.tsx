@@ -22,13 +22,13 @@ const VerifyEmail = () => {
   //Handle data fetching
   useEffect(() => {
     const fetchVerificationResponse = async () => {
-      return await http.get<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/confirm/email/token=${token}`);
+      return await http.get<GenericResponse>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/confirm/email?token=${token}`);
     }
     fetchVerificationResponse().then(response => {
       setVerificationResponse(response.data);
       setLoading(false);
     });
-  }, [http, token]);
+  }, [token]);
 
   //Incoming params
   const tokenParam = useSearchParams().get("token");

@@ -36,6 +36,19 @@ const Products: React.FC = () => {
     const menuBarRef = useRef<HTMLDivElement>(null) as MutableRefObject<HTMLDivElement>;
 
     useEffect(() => {
+        if (showOptions) {
+          document.body.style.overflowY = 'hidden';
+          menuBarRef ? menuBarRef.current.focus() : null
+        } else {
+          document.body.style.overflowY = 'auto';
+        }
+        // Cleanup function to reset overflow when component unmounts
+        return () => {
+          document.body.style.overflow = 'auto';
+        };
+      }, [showOptions]);
+
+    useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
     
           if (menuBarRef && showOptions && !menuBarRef.current.contains(event.target as Node)) {
@@ -53,11 +66,11 @@ const Products: React.FC = () => {
       useEffect(()=>{
 
         const fetchCategories = async() => {
-            return await http.get<Category>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/categories/fetch/category=${encodeURIComponent(category || '')}`);
+            return await http.get<Category>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/categories/fetch?category=${encodeURIComponent(category || '')}`);
         };
 
         const fetchProduct = async() => {
-            return await http.get<Product[]>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/products/fetch/filter/category=${encodeURIComponent(category || '')}`);
+            return await http.get<Product[]>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/products/fetch/filter?category=${encodeURIComponent(category || '')}`);
         }
 
         category && fetchCategories().then((response1) => {
@@ -119,7 +132,6 @@ const Products: React.FC = () => {
             description: product.name,
             title: product.name,
             id: product._id,
-            price: product.price,
             product: product
         }
         return listItem;
@@ -186,9 +198,9 @@ const Products: React.FC = () => {
                                 {option.value == 'default' ? <button className="dark:text-white text-black w-fit text-sm md:hover:text-orange-500 max-md:active:text-orange-500 md:dark:hover:text-orange-400 max-md:dark:active:text-orange-400">{option.name}</button> :
                                     <CollapseFilters title={option.name}>
                                         {option.value.split(',').map((value,index)=>{
-                                        return <div key={index}>
+                                        return <div key={index} className="gap-x-2">
                                             <input type="radio" value={value} />
-                                            <p className="text-black dark:text-white inline ml-2 text-sm">{value}</p>
+                                            <p className="text-black dark:text-white inline text-sm"> {value}</p>
                                         </div>
                                         })}
                                     </CollapseFilters>
@@ -213,15 +225,18 @@ const Products: React.FC = () => {
                     <div className="lg:w-10/12 max-lg:w-full">
                         <div className="flex flex-row justify-between items-center gap-x-2">
                             <div className="mb-4">
-                                <div className="h-1 w-24 bg-orange-400"></div>
-                                <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-layer-group text-orange-400"></i></span> {category?.toUpperCase()}</h2>
+                                <div className="h-1 w-24 bg-orange-500"></div>
+                                <h2 className="text-xl text-black dark:text-white"><span><i className="fa-solid fa-layer-group text-orange-500"></i></span> {category?.toUpperCase()}</h2>
                             </div>
                             <div>
                                 <div className="lg:hidden">
                                     <button title="Filter & Sort" className="text-black dark:text-white -z-30" onClick={()=>setShowOptions(!showOptions)}><i className="fa-solid fa-filter fa-xl"></i></button>
                                     <div className={`fixed z-30 pointer-events-auto inset-0 bg-neutral-800 opacity-20 dark:bg-gray-400 ${showOptions ? 'w-screen h-screen ease-in-out' : 'overflow-hidden w-0' } `}></div>
-                                    <div ref={menuBarRef} className={`z-30 ${showOptions ? 'w-1/2 h-screen overflow-y-auto ease-in-out' : 'overflow-hidden w-0' } fixed transition-width duration-300 inset-0 rounded-md dark:bg-zinc-800 bg-gray-100 text-black dark:text-white`}>
-                                        <h2 className="text-lg font-bold p-2"><i className="fa-solid fa-bars-staggered mr-2"></i>Sort & Filter</h2>
+                                    <div ref={menuBarRef} tabIndex={-1} className={`z-30 ${showOptions ? 'w-1/2 max-sm:w-full h-screen md:overflow-y-auto ease-in-out' : 'overflow-hidden w-0' } transition-width duration-300 inset-0 fixed overflow-y-scroll hide-scroll rounded-md dark:bg-zinc-800 bg-gray-100 text-black dark:text-white`}>
+                                        <div className="w-full flex flex-row justify-between pr-2">
+                                            <h2 className="text-lg font-bold p-2"><i className="fa-solid fa-bars-staggered mr-2"></i>Sort & Filter</h2>
+                                            <button title="Close" className="text-black dark:text-white sm:hidden" onClick={()=>setShowOptions(false)}><i className="fa-solid fa-x fa-xl"></i></button>
+                                        </div>
                                         <div className="flex flex-col p-2">
                                             <select className="dark:bg-zinc-700 bg-slate-200 text-black dark:text-white rounded-md py-2 max-md:hidden ">
                                                     <option value={'Price'}>Price</option>
@@ -254,9 +269,9 @@ const Products: React.FC = () => {
                                             {option.value == 'default' ? <button className="text-black dark:text-white inline ml-2 text-sm">{option.name}</button> :
                                             <CollapseFilters title={option.name}>
                                                 {option.value.split(',').map((value,index)=>{
-                                                    return <div key={index}>
+                                                    return <div className="gap-x-2" key={index}>
                                                     <input type="radio" value={value} />
-                                                    <p className="text-black dark:text-white inline ml-2 text-sm">{value}</p>
+                                                    <p className="text-black dark:text-white inline text-sm"> {value}</p>
                                                 </div>
                                                 })}
                                             </CollapseFilters>

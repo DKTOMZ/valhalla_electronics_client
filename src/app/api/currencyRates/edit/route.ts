@@ -3,6 +3,7 @@ import {BackendServices} from "@/app/api/inversify.config";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
 import CurrencyRates from "@/lib/currencyRatesSchema";
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
 }
 
 /**
-* POST Request handler for /api/auth/signup route.
+* POST Request handler for /api/auth/currencyRates route.
 */
 export async function POST(req: NextRequest) {
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
         try {
-            await CurrencyRates.updateOne({from: from, to: to},{from: from, to: to, rate: rate, updated: new Date()});
+            await CurrencyRates.updateOne({from: from, to: to},{from: from, to: to, rate: rate, updated: CURRENT_DATE_TIME()});
 
             return new Response(JSON.stringify({success:true}),{status:200,headers:{
                 'Content-Type':'application/json'

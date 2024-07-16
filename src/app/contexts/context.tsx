@@ -8,6 +8,7 @@ import { countryPhoneNumbers } from "@/utils/phoneNumbers";
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { Stripe, loadStripe } from '@stripe/stripe-js';
 import { ShippingRate } from '@/models/shippingRate';
+import { Product } from '@/models/products';
 
 
 interface SharedState {
@@ -35,7 +36,7 @@ interface SharedState {
   appliedPromocode: PromocodeType|undefined,
   setAppliedPromocode: React.Dispatch<React.SetStateAction<PromocodeType|undefined>>;
   // eslint-disable-next-line no-unused-vars
-  useCurrentCurrency: (value: number) => number;
+  useCurrentCurrency: (value: Product) => number;
   countryName: string;
   setCountryName: React.Dispatch<React.SetStateAction<string>>;
   firstName: string;
@@ -73,7 +74,6 @@ export const SharedStateProvider: React.FC<SharedStateProvider> = ({ children })
   const [cart, setCart] = useState<Cart|null>(null);
   const [cartSize, setCartSize] = useState<number>(0);
   const [currency, setCurrency] = useState<CurrenciesType|null>(null);
-  const [currencyRate,setCurrencyRate] = useState<number>(1);
   const [cartTotal,setCartTotal] = useState<number>(0);
   const [shippingFee,setShippingFee] = useState<number>(0);
   const [currencyRates, setCurrencyRates] = useState<CurrencyRateType[]>([]);
@@ -105,19 +105,23 @@ export const SharedStateProvider: React.FC<SharedStateProvider> = ({ children })
 
   const updateCurrency = async(newValue: CurrenciesType|null) => {
     setCurrency(newValue);
-    if(newValue?.shortName != 'KES') {
-      const TOKES = currencyRates.filter((rate)=>rate.from==currency?.shortName && rate.to=='KES');
-      TOKES && TOKES.length > 0 && setCurrencyRate(TOKES[0].rate);
-      const TONEWVALUE = currencyRates.filter((rate)=>rate.from=='KES' && rate.to==newValue?.shortName);
-      TONEWVALUE && TONEWVALUE.length > 0 && setCurrencyRate(TONEWVALUE[0].rate);
-    } else { /* empty */ }
+    // if(newValue?.shortName != 'KES') {
+    //   const TOKES = currencyRates.filter((rate)=>rate.from==currency?.shortName && rate.to=='KES');
+    //   TOKES && TOKES.length > 0 && setCurrencyRate(TOKES[0].rate);
+    //   const TONEWVALUE = currencyRates.filter((rate)=>rate.from=='KES' && rate.to==newValue?.shortName);
+    //   TONEWVALUE && TONEWVALUE.length > 0 && setCurrencyRate(TONEWVALUE[0].rate);
+    // } else { /* empty */ }
   }
 
-  const useCurrentCurrency = (value: number) => {
-    if(currency?.shortName == 'KES'){
-      return value;
+  const useCurrentCurrency = (value: Product) => {
+    if(currency?.shortName == value.currency){
+      return value.price;
     } else {
-      return parseFloat((currencyRate * value).toFixed(2));
+      const rate = currencyRates.filter((r)=>r.from==value.currency && r.to==currency?.shortName);
+      if(rate.length > 0){
+        return parseFloat((rate[0].rate * value.price).toFixed(2));
+      }
+      return parseFloat((1 * value.price).toFixed(2));
     }
   }
 

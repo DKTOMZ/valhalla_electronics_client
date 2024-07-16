@@ -45,7 +45,7 @@ const AppHome: React.FC = ()=>{
                 //
             }
         });
-    },[http])
+    },[])
 
     if(loading) {
         return <Loading />;
@@ -86,8 +86,8 @@ const AppHome: React.FC = ()=>{
             id: product._id,
             product: product
         }
-        listItem.price = Math.round(((100-product.discount)/100) * product.price);
-        listItem.oldPrice = product.price;
+        // listItem.price = Math.round(((100-product.discount)/100) * product.price);
+        // listItem.oldPrice = product.price;
         return listItem
           
     })

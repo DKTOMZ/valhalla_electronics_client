@@ -8,6 +8,7 @@ import { MailService } from "@/services/mailService";
 import { hash } from "bcryptjs";
 import { GenericUserTemplate } from "@/models/genericUserTemplate";
 import { MailTemplates } from "@/models/mailTemplates";
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
 
 
 //Services
@@ -59,9 +60,7 @@ export async function POST(request: Request) {
             const data = await appUser.create({
                 name: email.slice(0,email.indexOf('@')).replace('.',' '),
                 email: email,
-                password: hashedPasword,
-                created: new Date(),
-                updated: new Date()
+                password: hashedPasword
             });
 
             const user = {

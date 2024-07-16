@@ -56,11 +56,11 @@
 //                     </div>
 //                     {section !== SectionEnum.NEW_ARRIVALS ?
 //                         <div className="flex flex-row items-start justify-start gap-x-2 px-2">
-//                             <button className="text-black dark:text-white">{item.oldPrice ? "Now: "+(currency?.symbol||'')+' '+item.price : (currency?.symbol||'')+' '+item.price}</button>
-//                             {item.oldPrice && <div className="line-through text-black dark:text-slate-300">Was: {(currency?.symbol||'')+' '+item.oldPrice}</div>}
+//                             <button className="text-black dark:text-white">{item.oldPrice ? "Now: "+(currency?.symbol||'loading...'||'')+' '+item.price : (currency?.symbol||'loading...'||'')+' '+item.price}</button>
+//                             {item.oldPrice && <div className="line-through text-black dark:text-slate-300">Was: {(currency?.symbol||'loading...'||'')+' '+item.oldPrice}</div>}
 //                         </div>
 //                     : <div className="flex flex-row gap-x-1">
-//                         <button className="text-black px-2 dark:text-white">{(currency?.symbol||'')+' '+item.price}</button>
+//                         <button className="text-black px-2 dark:text-white">{(currency?.symbol||'loading...'||'')+' '+item.price}</button>
 //                         <button title="add to cart" className="ml-2 sm:hidden"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-orange-300 max-md:active:text-orange-300"></i></button>
 //                     </div>
 //                     }

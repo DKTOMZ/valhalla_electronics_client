@@ -8,7 +8,9 @@ import { OrderProduct, OrderType } from "@/models/order";
 import { Product as ProductType } from "@/models/products";
 import { ShippingRate } from "@/models/shippingRate";
 import { userOrderTemplate } from "@/models/userOrderTemplate";
+import { DbConnService } from "@/services/dbConnService";
 import { MailService } from "@/services/mailService";
+import mongoose from "mongoose";
 import { NextRequest } from "next/server";
 import Stripe from "stripe";
 
@@ -18,6 +20,7 @@ if(!process.env.STRIPE_SECRET_KEY){
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const mailService = BackendServices.get<MailService>('MailService');
+const dbConnService = BackendServices.get<DbConnService>('DbConnService');
 
 export async function POST(req: NextRequest) {
     const body = await req.text();
@@ -34,6 +37,17 @@ export async function POST(req: NextRequest) {
         return new Response(JSON.stringify({error:err.message}),{status:400,headers:{
             'Content-Type':'application/json'
         }});
+    }
+
+    let mongooseInstance: mongoose.Connection;
+
+    try {
+        mongooseInstance = await dbConnService.mongooseConnect();
+    }
+    catch(error:any) {
+        return    new Response(JSON.stringify({error:error}),{status:503,headers:{
+            'Content-Type':'application/json'
+        }})
     }
 
     if(event.type == 'checkout.session.completed') {
@@ -84,7 +98,11 @@ export async function POST(req: NextRequest) {
 
         const shipping = shippingDetails.find((s)=>s._id==session.metadata?.shippingId);
 
-        //Create Order
+        const dbSession = await mongooseInstance.startSession();
+
+        dbSession.startTransaction();
+
+        //Create Order, Update Stock, Send order mail and clear customer cart
         try {
             let order: OrderType = {
                 userEmail: session.customer_email,
@@ -105,32 +123,17 @@ export async function POST(req: NextRequest) {
             if(session.metadata.discount){
                 order.discount = ((session.amount_total??0)/100)-((session.amount_subtotal??0)/100);
             }
-            await Order.create<OrderType>(order);
-        } catch (error: any) {
-            console.log(error);
-            return new Response(JSON.stringify({error:error.message}), { status: 503, headers: {
-                'Content-Type':'application/json'
-            }})
-        }
 
-        //Update stock
-        try {
+            await Order.create<OrderType>(order);
+
             cartItemsFinal.map(async(item)=>{
                 const product = await Product.findById<ProductType>(item._id);
                 if(product && item.quantity){
                     const newStock = product?.stock-item.quantity;
                     await Product.updateOne({_id:item._id},{stock: newStock >= 0 ? newStock : 0});
                 }
-            })
-        } catch (error:any) {
-            console.log(error);
-            return new Response(JSON.stringify({error:error.message}), { status: 503, headers: {
-                'Content-Type':'application/json'
-            }})
-        }
+            });
 
-        //Send order mail to customer
-        try {
             const customerDetails = session.customer_details;
             const mailData: userOrderTemplate = {
                 cartItems: cartItemsFinal,
@@ -156,7 +159,7 @@ export async function POST(req: NextRequest) {
 
             if(session.metadata.promocode && session.metadata.discount){
                 mailData.discount = parseFloat(((parseInt(session.metadata.discount)*((session.amount_subtotal??0)/100))/100).toFixed(2));
-                mailData.promocode = session.metadata.promocode;
+                //mailData.promocode = session.metadata.promocode;
             }
 
             session.customer_details && session.customer_details.address && await mailService.sendMail<userOrderTemplate>({
@@ -166,21 +169,31 @@ export async function POST(req: NextRequest) {
                 context: mailData
             });
 
-            //clear customer cart
             await Cart.updateOne({email: session.customer_email}, {
                 cartItems: []
             });
 
+            await dbSession.commitTransaction();
+
+            console.log("Commit: Stripe payment Transaction");
+
             return new Response(JSON.stringify({success:true}),{status:200,headers:{
                 'Content-Type':'application/json'
             }});
-
         } catch (error: any) {
+            await dbSession.abortTransaction();
+
+            console.log("Rollback: Stripe payment Transaction");
+
             console.log(error);
-            return new Response(JSON.stringify({error:error.message}),{status:503,headers:{
+            
+            return new Response(JSON.stringify({error:error.message}), { status: 503, headers: {
                 'Content-Type':'application/json'
-            }});
+            }})
+        } finally {
+            dbSession.endSession();
         }
+
     } else {
         return new Response(JSON.stringify({success:true}),{status:200,headers:{
             'Content-Type':'application/json'

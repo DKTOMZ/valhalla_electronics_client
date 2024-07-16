@@ -14,6 +14,7 @@ export interface OrderProduct {
 }
 
 export interface OrderType {
+    _id?: string,
     userEmail: string,
     products: OrderProduct[],
     orderId: string,

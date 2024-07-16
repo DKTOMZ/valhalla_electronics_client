@@ -7,12 +7,17 @@ import { Product as ProductType } from "@/models/products";
 import ShippingRates from "@/lib/shippingRatesSchema";
 import { ShippingRate } from "@/models/shippingRate";
 import { PromocodeType } from "@/models/promocode";
+import { BackendServices } from "@/app/api/inversify.config";
+import { DbConnService } from "@/services/dbConnService";
 
 if(!process.env.STRIPE_SECRET_KEY){
     throw new Error('STRIPE_SECRET_KEY is missing')
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+//Services
+const dbConnService = BackendServices.get<DbConnService>('DbConnService');
 
 export async function POST(req: NextRequest) {
 
@@ -60,6 +65,10 @@ export async function POST(req: NextRequest) {
             'Content-Type':'application/json'
         }})
     }
+
+    await dbConnService.mongooseConnect().catch(err => new Response(JSON.stringify({error:err.message}),{status:503,headers:{
+        'Content-Type':'application/json'
+    }}))
 
     //Check if stock of all cart products is still available before initiating checkout process
     const unavailableProducts: string[] = [];
@@ -110,7 +119,7 @@ export async function POST(req: NextRequest) {
     //Create stripe checkout session
     try {
 
-        const orderId = 'VO' + Date.now();
+        const orderId = 'VE' + Date.now();
 
         const checkoutParams: Stripe.Checkout.SessionCreateParams = {
             metadata: {

@@ -56,6 +56,9 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
         if(!session){
             router.push('/pages/auth/login');
         } else {
+            if(item?.stock == 0){
+                return;
+            }
             setSaving(true);
             if(item){
                 item.quantityInCart = 1;
@@ -97,24 +100,24 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                                 {section === SectionEnum.FLASH_SALES ? 
                                     <div className="flex flex-row items-center justify-between">
                                         <div>
-                                            <div className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{item.oldPrice ? Math.round((((item.price||0)-(item.oldPrice))/(item.oldPrice))*100)+"% off": null}</div>
+                                            <div className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{ item.product ? Math.round(item.product?.discount)+"% off" : null}</div>
                                             <p className="ml-1 text-orange-400">Deal</p>
                                         </div>
                                         {status == 'authenticated' ? 
-                                            !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                                            !checkProductIsInCart(item.id) ? (item.product && item.product.stock > 0) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : null : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
                                         : null}
                                     </div>
                                 : null}
                                 {status == 'authenticated' && (section === SectionEnum.PRODUCTS || section === SectionEnum.FEATURED) ? 
-                                    !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                                    !checkProductIsInCart(item.id) ? (item.product && item.product.stock > 0) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : null : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
                                 : null}
                                 <div className="flex flex-row items-center gap-x-2">
                                     <p className="text-lg text-gray-800 dark:text-gray-100">
                                         {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                        {(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}
+                                        {(currency?.symbol||'loading...'||'')+' '+(item.product && useCurrentCurrency(item.product) * (item.product.discount ? ((100-item.product.discount)/100) : 1))?.toFixed(2)}
                                     </p>
                                     {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                    {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
+                                    {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'loading...'||'')+' '+(item.product && useCurrentCurrency(item.product))?.toFixed(2)}</p> : null}
                                 </div>
                                 <small className="text-sm text-black dark:text-white">
                                     {item.title}
@@ -138,25 +141,25 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                                 {section === SectionEnum.FLASH_SALES ? 
                                     <div className="flex flex-row items-center justify-between">
                                         <div>
-                                            <div className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{item.oldPrice ? Math.round((((item.price||0)-(item.oldPrice))/(item.oldPrice))*100)+"% off": null}</div>
+                                            <div className="border text-sm rounded-sm text-white bg-orange-600 p-1 w-fit border-orange-600">{item.product ? Math.round(item.product?.discount)+"% off" : null}</div>
                                             <p className="ml-1 text-orange-400">Deal</p>
                                         </div>
                                         {status == 'authenticated' ? 
-                                            !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"> <i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                                            !checkProductIsInCart(item.id) ? (item.product && item.product.stock > 0) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"> <i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : null : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
                                         : null
                                         }
                                     </div>
                                 : null}
                                 {section === SectionEnum.PRODUCTS && status == 'authenticated' ? 
-                                    !checkProductIsInCart(item.id) ?  <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>: <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                                    !checkProductIsInCart(item.id) ? (item.product && item.product.stock > 0) ?  <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>: null : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
                                 : null}
                                 <div className="flex flex-row items-center gap-x-2">
                                     <p className="text-lg text-gray-800 dark:text-gray-100">
                                         {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                        {(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}
+                                        {(currency?.symbol||'loading...'||'')+' '+ (item.product && useCurrentCurrency(item.product) * (item.product.discount ? ((100-item.product.discount)/100): 1))?.toFixed(2)}
                                     </p>
                                     {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                                    {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
+                                    {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'loading...'||'')+' '+(item.product && useCurrentCurrency(item.product))?.toFixed(2)}</p> : null}
                                 </div>
                                 <small className="text-sm text-black dark:text-white">
                                     {item.title}
@@ -181,15 +184,15 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                 <>
                     <div className="flex flex-row gap-x-3 items-center">
                         {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                        <p className="font-bold">{(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}</p>
+                        <p className="font-bold">{(currency?.symbol||'loading...'||'')+' '+ (item.product && useCurrentCurrency(item.product) * (item.product.discount ? ((100-item.product.discount)/100): 1))?.toFixed(2) }</p>
                         {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                        {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
+                        {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'loading...'||'')+' '+(item.product && useCurrentCurrency(item.product))?.toFixed(2)}</p> : null}
                     </div>
 
                     {section === SectionEnum.FLASH_SALES ? <p className="ml-1 text-orange-400">Deal</p> : null}
 
                     {status == 'authenticated' ?
-                        !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                        !checkProductIsInCart(item.id) ? (item.product && item.product.stock > 0) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button> : null : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
                     : null}
                 </>
                 : null}
@@ -207,15 +210,15 @@ export const CardGrid: React.FC<CardListProps> = ({items,section,paginate=false,
                 <>
                     <div className="flex flex-row gap-x-3 items-center">
                         {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                        <p className="font-bold">{(currency?.symbol||'')+' '+useCurrentCurrency(item.price||0)}</p>
+                        <p className="font-bold">{(currency?.symbol||'loading...'||'')+' '+(item.product && useCurrentCurrency(item.product) * (item.product.discount ? ((100-item.product.discount)/100) : 1))?.toFixed(2)}</p>
                         {/* eslint-disable-next-line react-hooks/rules-of-hooks */}
-                        {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'')+' '+useCurrentCurrency(item.oldPrice||0)}</p> : null}
+                        {section === SectionEnum.FLASH_SALES ? <p className="text-sm line-through text-gray-800 dark:text-gray-300">Was: {(currency?.symbol||'loading...'||'')+' '+(item.product && useCurrentCurrency(item.product))?.toFixed(2)}</p> : null}
                     </div>
 
                     {section === SectionEnum.FLASH_SALES ? <p className="ml-1 text-orange-400">Deal</p> : null}
 
                     {status == 'authenticated' ? 
-                        !checkProductIsInCart(item.id) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>: <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
+                        !checkProductIsInCart(item.id) ? (item.product && item.product.stock > 0) ? <button className="max-sm:hidden" disabled={saving} onClick={()=>addToCart(item.product)} title="add to cart"><i className="fa-solid fa-plus fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i></button>: null : <i title="in cart" className="fa-solid fa-check fa-lg text-orange-400 md:dark:hover:text-gray-200 max-md:dark:active:text-gray-200 md:hover:text-gray-500 max-md:active:text-gray-500"></i>
                     : null}
                 </>
                 : null}

@@ -8,6 +8,7 @@ import Loading from "@/components/loading";
 import Layout from "@/components/Layout";
 import { OrderType } from "@/models/order";
 import { useSession } from "next-auth/react";
+import { useSharedState } from "@/app/contexts/context";
 
 const OrderComplete: React.FC = () => {
     const [orderExists, setOrderExists] = useState(true);
@@ -16,6 +17,7 @@ const OrderComplete: React.FC = () => {
     const router = useRouter();
     const orderId = useSearchParams().get("id");
     const {data: session , status} = useSession();
+    const { setCartSize } = useSharedState();
 
     useEffect(()=>{
         if(!loadingOrder && orderExists){
@@ -25,15 +27,17 @@ const OrderComplete: React.FC = () => {
 
     useEffect(()=>{
         const checkOrder = async() => {
-            return http.get<OrderType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/orders/fetch/id/id=${orderId}`);
+            return http.get<OrderType>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/orders/fetch/id?id=${orderId}`);
         };
         checkOrder().then((response)=>{
             if(response.status != 200){
                 setOrderExists(false);
+            } else {
+                setTimeout(()=>setCartSize(0),2000);
             }
             setLoadingOrder(false);
         });
-    },[http, orderId])
+    },[orderId])
 
     if(!orderId || !orderExists){
         redirect('/pages/checkout');
@@ -45,14 +49,14 @@ const OrderComplete: React.FC = () => {
 
     return (
         <Layout>
-            <div className="flex flex-col items-center p-5 justify-center rounded-md bg-gray-200 dark:bg-zinc-700">
+            <div className="flex h-screen flex-col items-center p-5 justify-center rounded-md bg-gray-200 dark:bg-zinc-700">
                 <div className="flex flex-col p-5">
                     <h4 className="text-green-500 text-center mb-4 text-2xl">
                         <i className="fa-regular fa-circle-check fa-lg"></i>
                         <strong> Order successful! - {orderId}</strong>
                     </h4>
                     <p className="text-black dark:text-white text-lg mb-2">Your order has been successfully placed. Please check your email for order details</p>
-                    <p className="text-black dark:text-white text-lg mb-2">You can view all your orders in the orders page.</p>
+                    <p className="text-black dark:text-white text-lg mb-2">You can view all your orders in the <button className="text-orange-500 text-lg mb-2 underline" onClick={()=>router.replace('/pages/orders')}>orders</button> page.</p>
                     <p className="text-black dark:text-white text-lg mb-2">If you have other questions, please email 
                     <a className="text-orange-500 text-lg mb-2" href={`mailto:${process.env.NEXT_PUBLIC_VALHALLA_EMAIL}`}> {process.env.NEXT_PUBLIC_VALHALLA_EMAIL}</a>
                     </p>

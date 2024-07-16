@@ -12,5 +12,6 @@ export interface Product {
     stock: number,
     created: Date,
     updated: Date,
-    quantityInCart?: number
+    quantityInCart?: number,
+    currency: string
 } 

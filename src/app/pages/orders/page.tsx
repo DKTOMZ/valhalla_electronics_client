@@ -6,6 +6,7 @@ import { FrontendServices } from "@/lib/inversify.config";
 import { OrderType } from "@/models/order";
 import { HttpService } from "@/services/httpService";
 import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 const Orders: React.FC = () => {
@@ -19,7 +20,7 @@ const Orders: React.FC = () => {
 
     useEffect(()=>{
         const fetchUserOrders = async() => {
-            return http.get<OrderType[]>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/orders/fetch/email/userEmail=${encodeURIComponent(session?.user?.email||'')}`);
+            return http.get<OrderType[]>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/orders/fetch/email?userEmail=${encodeURIComponent(session?.user?.email||'')}`);
         };
 
         session && fetchUserOrders().then((response)=>{
@@ -31,7 +32,9 @@ const Orders: React.FC = () => {
             }
             setLoading(false);
         });
-    },[http, session])
+
+        !session && status == 'unauthenticated' && setLoading(false);
+    },[session])
 
     const searchOrders = () => {
         setTempOrders(orders.filter((order)=>order.orderId.toLowerCase().includes(searchText.toLowerCase())));
@@ -39,10 +42,30 @@ const Orders: React.FC = () => {
 
     useEffect(()=>{
         searchText === '' ? setTempOrders(orders) : null;
-    },[orders, searchText])
+    },[searchText])
+
+    const formatDateTime = (dateTimeStr: string) => {
+        const date = new Date(dateTimeStr);
+    
+        // Pad single digit numbers with leading zeros
+        const pad = (n: number) => n.toString().padStart(2, '0');
+    
+        const year = date.getUTCFullYear();
+        const month = pad(date.getUTCMonth() + 1);
+        const day = pad(date.getUTCDate());
+        const hours = pad(date.getUTCHours());
+        const minutes = pad(date.getUTCMinutes());
+        const seconds = pad(date.getUTCSeconds());
+    
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
 
     if(loading || status == 'loading'){
         return <Loading />;
+    }
+
+    if(status === 'unauthenticated') {
+        redirect('/pages/auth/login');
     }
 
     return (
@@ -96,9 +119,9 @@ const Orders: React.FC = () => {
                             <div className="text-black dark:text-white font-bold">VIEW ORDER</div>  
                         </div>
                         {orders.map((order,index)=>{
-                            return <div className="dark:bg-zinc-700 shadow-md shadow-zinc-600 dark:shadow-none bg-gray-100 rounded-md p-2 mb-4 text-sm break-words max-lg:hidden grid grid-cols-auto-fit-100 items-center" key={index}>
-                                <div id="date" className="text-black dark:text-white text-center">{order.created?.toString()}</div>
-                                <div id="deliveryStatus" className="text-black dark:text-white text-center">{order.deliveryStatus}</div>
+                            return <div className="dark:bg-zinc-700 shadow-md shadow-zinc-600 dark:shadow-none bg-gray-100 rounded-md p-3 mb-4 text-sm break-words max-lg:hidden grid grid-cols-auto-fit-100 items-center" key={index}>
+                                <div id="date" className="text-black dark:text-white text-center">{formatDateTime(order.created?.toString()||'')}</div>
+                                <div id="deliveryStatus" className={`text-center ${order.deliveryStatus == 'PENDING' ? 'text-red-500' : order.deliveryStatus == 'DISPATCHED' ? 'text-orange-600' : 'text-green-600'}`}>{order.deliveryStatus}</div>
                                 <div id="orderId" className="text-black dark:text-white text-center">{order.orderId}</div>
                                 <div id="paymentMethod" className="text-black dark:text-white text-center">{order.paymentMethod.toUpperCase()}</div>
                                 <div id="total" className="text-black dark:text-white text-center">{order.currency} {order.total}</div>
@@ -109,11 +132,11 @@ const Orders: React.FC = () => {
                             return <div className="lg:hidden order-card dark:bg-zinc-700 shadow-md shadow-zinc-600 p-4 flex flex-col gap-2 dark:shadow-none bg-gray-100 my-3 rounded-md cursor-default" key={index}>
                             <div id="date" className="flex flex-row justify-between items-center">
                                 <div className="text-black dark:text-white font-bold">DATE: </div>
-                                <div className="dark:text-white text-zinc-800 text-sm">{order.created?.toString()}</div>
+                                <div className="dark:text-white text-zinc-800 text-sm">{formatDateTime(order.created?.toString()||'')}</div>
                             </div>
                             <div id="deliveryStatus" className="flex flex-row justify-between items-center">
                                 <div className="text-black dark:text-white font-bold">DELIVERY STATUS: </div>
-                                <div className="dark:text-white text-zinc-800 text-sm">{order.deliveryStatus}</div>
+                                <div className={`text-sm ${order.deliveryStatus == 'PENDING' ? 'text-red-500' : order.deliveryStatus == 'DISPATCHED' ? 'text-orange-600' : 'text-green-600'}`}>{order.deliveryStatus}</div>
                             </div>
                             <div id="orderId" className="flex flex-row justify-between items-center">
                                 <div className="text-black dark:text-white font-bold">ORDER ID: </div>

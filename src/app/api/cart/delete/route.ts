@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 import Cart from "@/lib/cartSchema";
 import { Cart as CartType } from "@/models/cart";
 import mongoose from "mongoose";
+import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     try {
 
-        await Cart.updateOne({email: userEmail}, {$pull : {cartItems : {_id:objectId.toString()}}, updated: new Date()});
+        await Cart.updateOne({email: userEmail}, {$pull : {cartItems : {_id:objectId.toString()}}, updated: CURRENT_DATE_TIME()});
 
         const updatedCart = await Cart.findOne<CartType>({email:userEmail});
 
