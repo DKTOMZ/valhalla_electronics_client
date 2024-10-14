@@ -35,6 +35,7 @@ const Orders: React.FC = () => {
         });
 
         !session && status == 'unauthenticated' && setLoading(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[session])
 
     const searchOrders = () => {
@@ -43,6 +44,7 @@ const Orders: React.FC = () => {
 
     useEffect(()=>{
         searchText === '' ? setTempOrders(orders) : null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[searchText])
 
     const formatDateTime = (dateTimeStr: string) => {

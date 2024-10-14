@@ -28,6 +28,7 @@ const VerifyEmail = () => {
       setVerificationResponse(response.data);
       setLoading(false);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   //Incoming params

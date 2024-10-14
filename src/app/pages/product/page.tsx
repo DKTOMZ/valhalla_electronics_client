@@ -57,7 +57,7 @@ const Product: React.FC = () => {
                 setLoading(false);
             }
         });
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     },[productId, session])
 
     const addToCart = async(e: React.FormEvent<HTMLButtonElement>) => {

@@ -40,6 +40,7 @@ const ViewOrder: React.FC = () => {
             setLoadingSave(false);
             router.push('/pages/orders'); 
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[saveSuccess])
 
     useEffect(()=>{
@@ -56,6 +57,7 @@ const ViewOrder: React.FC = () => {
 
             setLoading(false);
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[http, loading, orderId]);
 
     const handleDispatch = async(e: React.FormEvent<HTMLFormElement>) => {

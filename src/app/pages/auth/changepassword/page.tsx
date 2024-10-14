@@ -23,7 +23,7 @@ const ChangePassword: React.FC = () => {
   const utilService = FrontendServices.get<UtilService>('UtilService');
 
   //token
-    const [token,setToken] = useState(useSearchParams().get("token"));
+    const [token] = useState(useSearchParams().get("token"));
   
   //Http request handling
   const [loadingSubmit,setLoadingSubmit] = useState(false);
@@ -54,6 +54,7 @@ const ChangePassword: React.FC = () => {
         setverificationResponse(response.data);
         setLoading(false);
     });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
   },[token]);
 
   useEffect(() => {

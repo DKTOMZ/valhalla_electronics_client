@@ -13,10 +13,12 @@ import { redirect } from "next/navigation";
 import React, { MutableRefObject, useEffect, useRef, useState } from "react";
 import { countryPhoneNumbers } from "@/utils/phoneNumbers";
 import { ValidationService } from "@/services/validationService";
-import Stripe from "stripe";
+import { Stripe } from "@stripe/stripe-js";
+import {Stripe as StripeClass} from "stripe";
 import { ShippingRate } from "@/models/shippingRate";
 import { CurrenciesType } from "@/models/currencies";
 import { UtilService } from "@/services/utilService";
+import { Product } from "@/models/products";
 
 const Checkout: React.FC = () => {
 
@@ -54,6 +56,7 @@ const Checkout: React.FC = () => {
             setCurrentShipping(response.data[0]);
             setShippingRates(response.data)
         });
+            // eslint-disable-next-line react-hooks/exhaustive-deps
     },[])
 
     useEffect(()=>{
@@ -67,7 +70,7 @@ const Checkout: React.FC = () => {
             if(response.status >= 200 && response.status < 300){
                 setCart(response.data);
                 let total = 0;
-                response.data.cartItems.forEach((item)=>total=total+parseFloat((useCurrentCurrency(item)-(item.discount*useCurrentCurrency(item)/100)).toFixed(2)));
+                response.data.cartItems.forEach((item)=>total=total+parseFloat((usecurrentCurrency(item)-(item.discount*usecurrentCurrency(item)/100)).toFixed(2)));
                 setCartTotal(total);
                 setTabs([<Cart key={'cart'} userEmail={session.user?.email}/>, <Shipping key={'shipping'}/>, <Payment key={'payment'}/>]);
             } else {
@@ -86,14 +89,16 @@ const Checkout: React.FC = () => {
         currentCheckoutTab > 0 && setCartComplete(true);
 
         currentCheckoutTab > 1 && setShippingComplete(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[session]);
 
     useEffect(()=>{
         if(cart){
             let total = 0;
-            cart.cartItems.forEach((item)=>total=parseFloat((total+(useCurrentCurrency(item)-(item.discount*useCurrentCurrency(item)/100))).toFixed(2))); 
+            cart.cartItems.forEach((item)=>total=parseFloat((total+(usecurrentCurrency(item)-(item.discount*usecurrentCurrency(item)/100))).toFixed(2))); 
             setCartTotal(total);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[currency,cart])
 
     useEffect(()=>{
@@ -104,6 +109,7 @@ const Checkout: React.FC = () => {
         } else {
             currentShipping && setShippingFee(parseFloat((((currentShipping.rate)/100)*(cartTotal)).toFixed(2)));
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[appliedPromocode,cartTotal])
 
     const applyPromocode = async()=>{
@@ -120,6 +126,9 @@ const Checkout: React.FC = () => {
         }
         setLoadingPromocode(false);
     };
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const usecurrentCurrency = (value: Product) => useCurrentCurrency(value);
 
     if (loading || status === "loading"){
         return <Loading />
@@ -223,10 +232,10 @@ const Checkout: React.FC = () => {
                     <div className="w-1/3 max-lg:w-full max-lg:order-2">
                         <Collapse title="PROMO CODE" className="bg-white dark:bg-transparent">
                             <form onSubmit={(e)=>e.preventDefault()} className="w-full">
-                                <input readOnly={appliedPromocode!=undefined} onBlur={(e)=>promocodeError.current.innerHTML=''} required type="text" onChange={(e)=>setPromocode(e.target.value)} value={promocode} id="promo-code" name="promo-code" placeholder="Enter Promo Code" className="px-2 outline-0 w-full shadow-md shadow-zinc-600 dark:shadow-none rounded-md h-10 ring-1 dark:bg-neutral-700 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2" />
+                                <input readOnly={appliedPromocode!=undefined} onBlur={()=>promocodeError.current.innerHTML=''} required type="text" onChange={(e)=>setPromocode(e.target.value)} value={promocode} id="promo-code" name="promo-code" placeholder="Enter Promo Code" className="px-2 outline-0 w-full shadow-md shadow-zinc-600 dark:shadow-none rounded-md h-10 ring-1 dark:bg-neutral-700 dark:text-white ring-orange-400 outline-orange-400 focus:ring-2" />
                                 <div ref={promocodeError} className='text-red-500 text-center mt-2'></div>
                                 { appliedPromocode && <div className=" text-white w-full p-2 flex flex-row gap-x-3 items-start justify-start">
-                                        <button onClick={(e)=>{
+                                        <button onClick={()=>{
                                             setAppliedPromocode(undefined);
                                             setDiscount(0);
                                             }} title="Click to remove" className="bg-red-600 p-2 text-white rounded-md">
@@ -237,7 +246,7 @@ const Checkout: React.FC = () => {
                                             <div>Promo {appliedPromocode?.code} has been applied! - {appliedPromocode?.discountPercent}% off</div>
                                         </div>
                                 </div>}
-                                <button disabled={loadingPromocode||appliedPromocode!=undefined} onClick={e=>applyPromocode()} type="submit" className="text-white w-full p-2 mt-4 bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 disabled:bg-gray-500 disabled:hover:bg-gray-500">Apply Code</button>
+                                <button disabled={loadingPromocode||appliedPromocode!=undefined} onClick={()=>applyPromocode()} type="submit" className="text-white w-full p-2 mt-4 bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 disabled:bg-gray-500 disabled:hover:bg-gray-500">Apply Code</button>
                             </form>
                         </Collapse>
                         <div className="bg-white dark:bg-transparent shadow-sm rounded-md shadow-zinc-700 dark:shadow-gray-200 p-4">
@@ -273,7 +282,7 @@ const Checkout: React.FC = () => {
                                     setShippingComplete(true);
                                     window.scrollTo(0,0);
                                 }
-                            }} onBlur={(e)=>{
+                            }} onBlur={()=>{
                                 shippingCompleteError.current.innerHTML = '';
                             }} className="text-white w-full p-2 mt-4 bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500">
                                 {currentCheckoutTab === 0 ? 'Checkout' : 'Make Payment' }
@@ -323,6 +332,9 @@ const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
         }
     };
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const usecurrentCurrency = (value: Product) => useCurrentCurrency(value);
+
     if(loadingRemove){
         return <Loading />;
     }
@@ -341,7 +353,7 @@ const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
                             <div>
                                 <h3 className="text-base text-black dark:text-white">{item.name}</h3>
                                 {!final ? item.stock > 0 ? <p className="text-md text-green-600">IN STOCK</p> : <p className="text-md text-red-500">OUT OF STOCK</p> : null }
-                                <p className="text-lg text-gray-700 dark:text-gray-300 font-bold">{`${currency?.symbol||'loading...'} ${(useCurrentCurrency(item)-(useCurrentCurrency(item)*item.discount/100)).toFixed(2)}`}</p>
+                                <p className="text-lg text-gray-700 dark:text-gray-300 font-bold">{`${currency?.symbol||'loading...'} ${(usecurrentCurrency(item)-(usecurrentCurrency(item)*item.discount/100)).toFixed(2)}`}</p>
                                 {final ? <p className="text-gray-700 dark:text-gray-300 text-base">Qty: {item.quantityInCart}</p> : null}
                             </div>
                         </div>
@@ -349,7 +361,7 @@ const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
                         <button onClick={(e)=>handleRemoveCartItem(e, item._id)} className="text-white text-sm bg-orange-600 p-2 rounded-md md:hover:bg-orange-500 max-md:active:bg-orange-500"><i className="fa-regular fa-trash-can"></i> REMOVE
                         </button>
                         <div className="flex flex-row items-center">
-                            <button onClick={async(e)=>{
+                            <button onClick={async()=>{
                                 if(item.quantityInCart != undefined && item.quantityInCart > 1){
                                     const cartItems = cart.cartItems.map((i)=>({...i}));
                                     const existingItem = cartItems.find((i)=>i._id==item._id);
@@ -371,7 +383,7 @@ const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
                             
                             }} className="bg-orange-600 text-white text-2xl px-2 shadow-sm shadow-zinc-700 rounded-md md:hover:bg-orange-500 max-md:active:bg-orange-500"> -</button>
                             <div className="w-10 text-center text-black dark:text-white">{item.quantityInCart}</div>
-                            <button onClick={async(e)=>{
+                            <button onClick={async()=>{
                                 if(item.quantityInCart != undefined && item.quantityInCart < item.stock){
                                     const cartItems = cart.cartItems.map((i)=>({...i}));
                                     const existingItem = cartItems.find((i)=>i._id==item._id);
@@ -411,7 +423,7 @@ interface shippingOption {
 
 const Shipping: React.FC = () => {
 
-    const { useCurrentCurrency, currency, cart, shippingFee, setShippingFee, cartTotal, shippingRates, setCurrentShipping, currentShipping, appliedPromocode
+    const { currency, cart, setShippingFee, cartTotal, shippingRates, setCurrentShipping, currentShipping, appliedPromocode
     } = useSharedState();
 
     useEffect(()=>{
@@ -431,7 +443,7 @@ const Shipping: React.FC = () => {
                 setShippingFee(parseFloat((((found.rate)/100)*(cartTotal)).toFixed(2)));
             }
         }
-
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[appliedPromocode,cartTotal])
 
     const [shippingOptions, setShippingOptions] = useState<shippingOption[]>(
@@ -493,11 +505,12 @@ const Payment: React.FC = () => {
     const validationService = FrontendServices.get<ValidationService>('ValidationService');
     const http = FrontendServices.get<HttpService>('HttpService');
     const utilService = FrontendServices.get<UtilService>('UtilService');
+    let stripe: Stripe|null;
 
-    const { useCurrentCurrency, currency, cart, shippingFee, setShippingFee, cartTotal,
+    const { useCurrentCurrency, currency, cart, shippingFee, cartTotal,
         countryName, setCountryName, firstName, setFirstName, lastName, setLastName,
         phoneNumber, setPhoneNumber, phoneCode, setPhoneCode, address, setAddress, 
-        city, setCity, postalCode, setPostalCode, useStripe, currencyRates, currentShipping,
+        city, setCity, postalCode, setPostalCode, useStripe, currentShipping,
         appliedPromocode
      } = useSharedState();
 
@@ -519,6 +532,14 @@ const Payment: React.FC = () => {
     const stripeError = useRef<HTMLElement>(null) as MutableRefObject<HTMLDivElement>;
 
     useEffect(()=>{
+        getStripeInstance().then((r)=>{
+            if(r){
+                stripe = r;
+            }
+        });
+    },[])
+
+    useEffect(()=>{
         if(currency && currency.shortName != 'KES'){
             setPaymentOption('STRIPE');
             setPaymentOptions(paymentOptionsCopy.filter((option)=>option.value!='M-PESA'));
@@ -528,6 +549,7 @@ const Payment: React.FC = () => {
             // paymentOptions.filter((option)=>option.value=='M-PESA').length == 0
             // && setPaymentOptions([...paymentOptions, {text: 'Pay with M-PESA', value: 'M-PESA'}])
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[currency])
 
     useEffect(()=>{
@@ -537,7 +559,6 @@ const Payment: React.FC = () => {
     [phoneCode])
 
     const handleStripeCheckout = async() => {
-        const stripe = await useStripe();
         if(!stripe){
             utilService.handleErrorInputField(stripeError,'Failed to connect to stripe');
             return;
@@ -557,7 +578,7 @@ const Payment: React.FC = () => {
                 cartTotal: number,
                 promocode?: PromocodeType
             } = {
-                cart: {...cart, cartItems: cart.cartItems.map((i)=>({...i, price: useCurrentCurrency(i)}))},
+                cart: {...cart, cartItems: cart.cartItems.map((i)=>({...i, price: currentCurrency(i)}))},
                 shippingId: currentShipping?._id,
                 shippingFee: shippingFee,
                 currency: currency,
@@ -569,10 +590,10 @@ const Payment: React.FC = () => {
                 data.cartTotal = total;
             }
             
-            const response = await http.post<{stripeSession: Stripe.Response<Stripe.Checkout.Session>, error?: string}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/payment/stripe/session`,
+            const response = await http.post<{stripeSession: StripeClass.Response<StripeClass.Checkout.Session>, error?: string}>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/payment/stripe/session`,
             JSON.stringify(data));
 
-            if(response.status == 200){
+            if(response.status == 200 && stripe){
                 const {error} = await stripe.redirectToCheckout({sessionId: response.data.stripeSession.id});
                 if(error){
                     utilService.handleErrorInputField(stripeError,error.message||'Failed to redirect to stripe. Try again later.');
@@ -584,9 +605,15 @@ const Payment: React.FC = () => {
         }
     };
 
-    const handleMPESACheckout = () => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks    
+    const currentCurrency = (value: Product) => useCurrentCurrency(value);
+    
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const getStripeInstance = async() => await useStripe();
 
-    };
+    // const handleMPESACheckout = () => {
+
+    // };
 
     return (
         <>
@@ -674,8 +701,8 @@ const Payment: React.FC = () => {
                         </div>
                         : 
                         <div>
-                            <div onBlur={(e)=>stripeError.current.innerHTML = ''} ref={stripeError} className='text-red-500'></div>
-                            <button disabled={loadingStripe} onClick={(e)=>handleStripeCheckout()} className="text-white w-full p-2 mt-4 text-lg bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 disabled:bg-gray-500 disabled:hover:bg-gray-500">
+                            <div onBlur={()=>stripeError.current.innerHTML = ''} ref={stripeError} className='text-red-500'></div>
+                            <button disabled={loadingStripe} onClick={()=>handleStripeCheckout()} className="text-white w-full p-2 mt-4 text-lg bg-orange-600 md:hover:bg-orange-500 max-md:active:bg-orange-500 disabled:bg-gray-500 disabled:hover:bg-gray-500">
                                 <i className="fa-brands fa-cc-stripe fa-lg"></i> CHECKOUT
                             </button>
                         </div>}

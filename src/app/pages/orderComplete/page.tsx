@@ -26,6 +26,7 @@ const OrderComplete: React.FC = () => {
         if(!loadingOrder && orderExists){
             utilService.runSnow();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[orderExists,loadingOrder, session]);
 
     useEffect(()=>{
