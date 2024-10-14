@@ -49,7 +49,7 @@ export const Collapse: React.FC<CollapseOptions> = ({title, children, className}
             style={{ height }}
             className={`mb-4 flex ${className} flex-col gap-y-1 border rounded-md dark:border-gray-400 border-zinc-800 overflow-hidden transition-height duration-300 ease-in-out`}
         >
-            <button
+            <button type="button"
                 id="collapse-button"
                 style={{ borderBottomWidth: '1px' }}
                 className="w-full border-black dark:border-white flex flex-row justify-between items-center outline-none p-3 transition-all duration-300"

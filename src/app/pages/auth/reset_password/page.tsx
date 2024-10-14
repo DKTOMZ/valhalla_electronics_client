@@ -9,6 +9,7 @@ import { GenericResponse } from "@/models/genericResponse";
 import { HttpServiceResponse } from "@/models/httpServiceResponse";
 import { HttpService } from "@/services/httpService";
 import { ValidationService } from "@/services/validationService";
+import { UtilService } from "@/services/utilService";
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import { redirect, useRouter } from "next/navigation";
@@ -23,6 +24,8 @@ const ResetPassword = () => {
     const router = useRouter();
     const http = FrontendServices.get<HttpService>('HttpService');
     const validationService = FrontendServices.get<ValidationService>('ValidationService');
+    const utilService = FrontendServices.get<UtilService>('UtilService');
+
 
     //State variables
     const [loadingSubmit,setLoadingSubmit] = useState(false);
@@ -75,7 +78,7 @@ const ResetPassword = () => {
         if (response.data.success) {
             setResetPasswordSuccess(response.data.success);
         } else {
-            resetError.current.innerHTML = response.data.error || response.statusText;
+            utilService.handleErrorInputField(resetError,response.data.error || response.statusText);
         }
 
         setLoadingSubmit(false);

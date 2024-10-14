@@ -16,10 +16,13 @@ import { ValidationService } from "@/services/validationService";
 import Stripe from "stripe";
 import { ShippingRate } from "@/models/shippingRate";
 import { CurrenciesType } from "@/models/currencies";
+import { UtilService } from "@/services/utilService";
 
 const Checkout: React.FC = () => {
 
     const http = FrontendServices.get<HttpService>('HttpService');
+    const utilService = FrontendServices.get<UtilService>('UtilService');
+
     const { data: session , status } = useSession();
 
     const { cart, setCart, useCurrentCurrency, cartTotal, setCartTotal, shippingFee, currency, currentCheckoutTab, setCurrentCheckoutTab, appliedPromocode, setAppliedPromocode,
@@ -113,7 +116,7 @@ const Checkout: React.FC = () => {
             setDiscount(parseFloat(((response.data.discountPercent*(cartTotal))/100).toFixed(2)));
             setAppliedPromocode(response.data);
         } else {
-            promocodeError.current.innerHTML = response.data.error || response.statusText;
+            utilService.handleErrorInputField(promocodeError,response.data.error || response.statusText);
         }
         setLoadingPromocode(false);
     };
@@ -401,7 +404,9 @@ const Cart: React.FC<CartProps> = ({final=false, userEmail}) => {
 
 interface shippingOption {
     text: string,
-    price: number
+    price: number,
+    minDays: number,
+    maxDays: number
 }
 
 const Shipping: React.FC = () => {
@@ -413,7 +418,7 @@ const Shipping: React.FC = () => {
         if(appliedPromocode){
             const discount = parseFloat(((appliedPromocode.discountPercent*(cartTotal))/100).toFixed(2));
             setShippingOptions(shippingRates.map((rate)=>{
-                return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal-discount)).toFixed(2))}
+                return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal-discount)).toFixed(2)), minDays: rate.minimumDeliveryDays, maxDays: rate.maximumDeliveryDays||0}
             }));
             const found = shippingRates.find((s)=>s.name==currentShipping?.name);
             if(found){
@@ -431,12 +436,12 @@ const Shipping: React.FC = () => {
 
     const [shippingOptions, setShippingOptions] = useState<shippingOption[]>(
         shippingRates.map((rate)=>{
-            return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal)).toFixed(2))}
+            return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal)).toFixed(2)), minDays: rate.minimumDeliveryDays, maxDays: rate.maximumDeliveryDays||0}
     }));
 
     const [shippingOptionsCopy, setShippingOptionsCopy] = useState<shippingOption[]>(
         shippingRates.map((rate)=>{
-            return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal)).toFixed(2))}
+            return {text: rate.name, price: parseFloat((((rate.rate)/100)*(cartTotal)).toFixed(2)), minDays: rate.minimumDeliveryDays, maxDays: rate.maximumDeliveryDays||0}
     }));
 
     return (
@@ -455,13 +460,16 @@ const Shipping: React.FC = () => {
             })}
             <div className="flex flex-col mt-4" >
                     {shippingOptions.map((option,index)=>{
-                    return <label key={index} className="flex flex-row items-center mb-4">
-                        <input type="radio" value={option.price} checked={option.text == currentShipping?.name} onChange={(e)=>{
-                                    const found = shippingRates.find((s)=>s.name==option.text);
-                                    found && setCurrentShipping(found);
-                                    setShippingFee(parseFloat(e.target.value));
-                        }} className="w-5 h-5" />
-                        <p className="text-black dark:text-white inline ml-2 text-base">{option.text}<span className="font-bold ml-2 text-lg text-black dark:text-white">{option.price == 0 ? 'FREE' : (currency?.symbol||'loading...'||'')+' '+option.price }</span></p>
+                    return <label key={index} className="flex flex-col mb-4">
+                        <div className="flex flex-row items-center">
+                            <input type="radio" value={option.price} checked={option.text == currentShipping?.name} onChange={(e)=>{
+                                const found = shippingRates.find((s)=>s.name==option.text);
+                                found && setCurrentShipping(found);
+                                setShippingFee(parseFloat(e.target.value));
+                            }} className="w-5 h-5" />
+                            <p className="text-black dark:text-white inline ml-2 text-base">{option.text}<span className="font-bold ml-2 text-lg text-black dark:text-white">{option.price == 0 ? 'FREE' : (currency?.symbol||'loading...'||'')+' '+option.price }</span></p>
+                        </div>
+                        <p className="text-gray-700 dark:text-gray-300 inline ml-2 text-sm">{option.maxDays ? `Between ${option.minDays} and ${option.maxDays} business days` : `Takes ${option.minDays} business days`}</p>
                     </label> 
                 })}
             </div>
@@ -484,6 +492,7 @@ const Payment: React.FC = () => {
 
     const validationService = FrontendServices.get<ValidationService>('ValidationService');
     const http = FrontendServices.get<HttpService>('HttpService');
+    const utilService = FrontendServices.get<UtilService>('UtilService');
 
     const { useCurrentCurrency, currency, cart, shippingFee, setShippingFee, cartTotal,
         countryName, setCountryName, firstName, setFirstName, lastName, setLastName,
@@ -530,12 +539,12 @@ const Payment: React.FC = () => {
     const handleStripeCheckout = async() => {
         const stripe = await useStripe();
         if(!stripe){
-            stripeError.current.innerHTML = 'Failed to connect to stripe';
+            utilService.handleErrorInputField(stripeError,'Failed to connect to stripe');
             return;
         } else {
 
             if(!cart){
-                return stripeError.current.innerHTML = 'Cart seems to be empty';
+                return utilService.handleErrorInputField(stripeError,'Cart seems to be empty');
             }
 
             setLoadingStripe(true);
@@ -566,10 +575,10 @@ const Payment: React.FC = () => {
             if(response.status == 200){
                 const {error} = await stripe.redirectToCheckout({sessionId: response.data.stripeSession.id});
                 if(error){
-                    stripeError.current.innerHTML= error.message||'Failed to redirect to stripe. Try again later.';
+                    utilService.handleErrorInputField(stripeError,error.message||'Failed to redirect to stripe. Try again later.');
                 }
             } else {
-                stripeError.current.innerHTML = response.data.error || response.statusText;
+                utilService.handleErrorInputField(stripeError,response.data.error || response.statusText);
                 setLoadingStripe(false); 
             }
         }

@@ -4,10 +4,11 @@ import { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { PromocodeType } from "@/models/promocode";
 import Promocode from "@/lib/promoCodesSchema";
-import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
+import { UtilService } from "@/services/utilService";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
+const utilService = BackendServices.get<UtilService>('UtilService');
 
 export async function POST(req: NextRequest) {
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
             }});
         }
 
-        if(new Date(CURRENT_DATE_TIME()) >= new Date(promocode[0].validUntil)){
+        if(new Date(utilService.getCurrentDateTime()) >= new Date(promocode[0].validUntil)){
             return new Response(JSON.stringify({'error':'Promocode has expired'}),{status:404,headers:{
                 'Content-Type':'application/json'
             }});

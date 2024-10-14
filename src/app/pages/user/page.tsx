@@ -15,14 +15,15 @@ import { GenericResponse } from "@/models/genericResponse";
 import Modal from "@/components/modal";
 import { profilePictureResponse } from "@/models/profilePictureResponse";
 import { useSharedState } from "@/app/contexts/context";
-import { StorageService } from "@/services/storageService";
+import { UtilService } from "@/services/utilService";
 
 const User: React.FC = () => { 
     
     const http = FrontendServices.get<HttpService>('HttpService');
     const validationService = FrontendServices.get<ValidationService>('ValidationService');
-    FrontendServices.get<StorageService>('StorageService');
-//State variables
+    const utilService = FrontendServices.get<UtilService>('UtilService');
+    
+    //State variables
     const [newPassword,setNewPassword] = useState('');
     const [currentPassword,setCurrentPassword] = useState('');
     const [newConfirmPassword,setNewConfirmPassword] = useState('');
@@ -65,7 +66,7 @@ const User: React.FC = () => {
         const validation = await validationService.validateImage(file);
 
         if (typeof validation === 'string') {
-            saveImageError.current.innerHTML = validation;
+            utilService.handleErrorInputField(saveImageError,validation);
         } else {
             setUploading(true);
 
@@ -89,7 +90,7 @@ const User: React.FC = () => {
                 };
                 await update(updateUser);
             } else {
-                saveImageError.current.innerHTML = response.data.error ?? response.statusText;
+                utilService.handleErrorInputField(saveImageError,response.data.error ?? response.statusText);
             }
             setUploading(false);
         }
@@ -113,7 +114,7 @@ const User: React.FC = () => {
         if (response.data.success) {
             setChangePasswordSuccess(response.data.success);
         } else {
-            changePasswordError.current.innerHTML = response.data.error || response.statusText;
+            utilService.handleErrorInputField(changePasswordError,response.data.error ?? response.statusText);
         }
 
         setLoadingSubmit(false);
@@ -144,7 +145,7 @@ const User: React.FC = () => {
             };
             await update(updateUser);
         } else {
-            updateNameError.current.innerHTML = response.data.error || '';
+            utilService.handleErrorInputField(updateNameError,response.data.error ?? response.statusText);
         }
     };
 

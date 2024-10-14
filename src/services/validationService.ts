@@ -1,4 +1,5 @@
-import { emailRegex } from "@/utils/regex";
+import { FrontendServices } from "@/lib/inversify.config";
+import { UtilService } from "@/services/utilService";
 import { injectable } from "inversify";
 import React from "react";
 
@@ -8,6 +9,11 @@ import React from "react";
  */
 @injectable()
 export class ValidationService {
+    private utilService: UtilService;
+
+    constructor(){
+        this.utilService = FrontendServices.get<UtilService>('UtilService');
+    }
 
     async validateImage(file: File){
         if(!file['type'].includes('image')) {
@@ -37,7 +43,7 @@ export class ValidationService {
             emailErrorElement.current.innerHTML = '';
             return false;
         }
-        if (!emailRegex.test(email)){
+        if (!this.utilService.getEmailRegex().test(email)){
             emailErrorElement.current.innerHTML = 'Invalid email format';
             return false;
         }

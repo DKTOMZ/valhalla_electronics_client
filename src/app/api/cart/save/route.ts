@@ -5,10 +5,11 @@ import { getToken } from "next-auth/jwt";
 import { Product } from "@/models/products";
 import { Cart as CartType} from "@/models/cart";
 import Cart from "@/lib/cartSchema";
-import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
+import { UtilService } from "@/services/utilService";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
+const utilService = BackendServices.get<UtilService>('UtilService');
 
 export async function GET(req: NextRequest) {
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
             }});
         }
 
-        await Cart.updateOne({email:email,cartItems:[...existingCart.cartItems, cartItem], updated: CURRENT_DATE_TIME()});
+        await Cart.updateOne({email:email,cartItems:[...existingCart.cartItems, cartItem], updated: utilService.getCurrentDateTime()});
 
         const cartAfterUpdate = await Cart.findOne<CartType>({email: email});
 

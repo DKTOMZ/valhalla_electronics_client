@@ -6,6 +6,7 @@ import { FrontendServices } from "@/lib/inversify.config";
 import { OrderType } from "@/models/order";
 import { HttpService } from "@/services/httpService";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -125,8 +126,10 @@ const Orders: React.FC = () => {
                                 <div id="orderId" className="text-black dark:text-white text-center">{order.orderId}</div>
                                 <div id="paymentMethod" className="text-black dark:text-white text-center">{order.paymentMethod.toUpperCase()}</div>
                                 <div id="total" className="text-black dark:text-white text-center">{order.currency} {order.total}</div>
-                                <button className="underline text-base text-orange-500">Details</button>
-                            </div>
+                                <Link className="text-orange-600 hover:text-orange-500 underline w-fit mx-auto text-sm" href={`/pages/orders/view?id=${order.orderId}`}>
+                                    Details
+                                </Link>                            
+                                </div>
                         })}
                         {orders.map((order,index)=>{
                             return <div className="lg:hidden order-card dark:bg-zinc-700 shadow-md shadow-zinc-600 p-4 flex flex-col gap-2 dark:shadow-none bg-gray-100 my-3 rounded-md cursor-default" key={index}>
@@ -152,7 +155,9 @@ const Orders: React.FC = () => {
                             </div>
                             <div id="action" className="flex flex-row justify-between items-center">
                                 <div className="text-black dark:text-white font-bold">VIEW ORDER: </div>
-                                <button className="underline text-base text-orange-500">Details</button>
+                                <Link className="text-orange-600 hover:text-orange-500 underline w-fit text-sm" href={`/pages/orders/view?id=${order.orderId}`}>
+                                    Details
+                                </Link> 
                             </div>
                         </div>
                         })}

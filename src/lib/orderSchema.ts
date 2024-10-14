@@ -1,5 +1,8 @@
-import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
+import { BackendServices } from "@/app/api/inversify.config";
+import { UtilService } from "@/services/utilService";
 import mongoose from "mongoose";
+
+const utilService = BackendServices.get<UtilService>('UtilService');
 
 /**
  * order schema for mongodb. Used to create a order before db operations.
@@ -63,12 +66,12 @@ const orderSchema = new mongoose.Schema({
     created: {
         type: Date,
         required: false,
-        default: CURRENT_DATE_TIME()
+        default: utilService.getCurrentDateTime()
     },
     updated: {
         type: Date,
         required: false,
-        default: CURRENT_DATE_TIME()
+        default: utilService.getCurrentDateTime()
     },
     currency: {
         type: String,

@@ -1,6 +1,5 @@
 'use client'
 import React, { useEffect, useState } from "react";
-import { runSnow } from "@/utils/confetti";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { FrontendServices } from "@/lib/inversify.config";
 import { HttpService } from "@/services/httpService";
@@ -9,8 +8,12 @@ import Layout from "@/components/Layout";
 import { OrderType } from "@/models/order";
 import { useSession } from "next-auth/react";
 import { useSharedState } from "@/app/contexts/context";
+import { UtilService } from "@/services/utilService";
 
 const OrderComplete: React.FC = () => {
+
+    const utilService = FrontendServices.get<UtilService>('UtilService');
+
     const [orderExists, setOrderExists] = useState(true);
     const [loadingOrder, setLoadingOrder] = useState(true);
     const http = FrontendServices.get<HttpService>('HttpService');
@@ -21,7 +24,7 @@ const OrderComplete: React.FC = () => {
 
     useEffect(()=>{
         if(!loadingOrder && orderExists){
-            runSnow();
+            utilService.runSnow();
         }
     },[orderExists,loadingOrder, session]);
 
@@ -37,7 +40,7 @@ const OrderComplete: React.FC = () => {
             }
             setLoadingOrder(false);
         });
-    },[orderId])
+     })//[orderId])
 
     if(!orderId || !orderExists){
         redirect('/pages/checkout');

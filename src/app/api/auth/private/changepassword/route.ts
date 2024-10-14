@@ -2,13 +2,14 @@ import {BackendServices} from "@/app/api/inversify.config";
 import appUser from "@/lib/userSchema";
 import { UserServer } from "@/models/User";
 import { DbConnService } from "@/services/dbConnService";
-import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
+import { UtilService } from "@/services/utilService";
 import { compare, hash } from "bcryptjs";
 import { getToken } from "next-auth/jwt";
 
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
+const utilService = BackendServices.get<UtilService>('UtilService');
 
 export async function GET(req: any) {
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
@@ -110,7 +111,7 @@ export async function POST(req: any) {
 
         try {
 
-            await appUser.updateOne({ email:user.email},{ password: hashedPasword, updated: CURRENT_DATE_TIME()});
+            await appUser.updateOne({ email:user.email},{ password: hashedPasword, updated: utilService.getCurrentDateTime()});
 
             return new Response(JSON.stringify({success:true}),{status:201,headers:{
                 'Content-Type':'application/json'

@@ -4,12 +4,13 @@ import {BackendServices} from "@/app/api/inversify.config";
 import { JWTService } from "@/services/jwtService";
 import { UserServer } from "@/models/User";
 import { NextRequest } from "next/server";
-import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
+import { UtilService } from "@/services/utilService";
 
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
 const jwtService = BackendServices.get<JWTService>('JWTService');
+const utilService = BackendServices.get<UtilService>('UtilService');
 
 export async function POST() {
     return new Response(JSON.stringify({error:'POST Method not supported'}),{status:405,headers:{
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest ) {
                 headers: {'Content-Type':'application/json'}
             });
         }
-        await appUser.updateOne({ _id: userId },{ emailVerified: true, updated: CURRENT_DATE_TIME()});
+        await appUser.updateOne({ _id: userId },{ emailVerified: true, updated: utilService.getCurrentDateTime()});
         return new Response(JSON.stringify({success:true}),{
             status:200,
             headers: {'Content-Type':'application/json'}

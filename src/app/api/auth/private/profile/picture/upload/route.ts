@@ -2,7 +2,7 @@ import {BackendServices} from "@/app/api/inversify.config";
 import appUser from "@/lib/userSchema";
 import { UserServer } from "@/models/User";
 import { DbConnService } from "@/services/dbConnService";
-import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
+import { UtilService } from "@/services/utilService";
 import { PutObjectCommand, S3 } from "@aws-sdk/client-s3";
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');
+const utilService = BackendServices.get<UtilService>('UtilService');
 
 export async function GET(req: NextRequest) {
     if(!process.env.NEXT_PUBLIC_COOKIE_NAME){
@@ -153,7 +154,7 @@ export async function POST(req: NextRequest) {
             
             await saveFileToS3(userExists);
 
-            await appUser.updateOne({email:email},{image:imageLink.link, updated: CURRENT_DATE_TIME()});
+            await appUser.updateOne({email:email},{image:imageLink.link, updated: utilService.getCurrentDateTime()});
 
             return new Response(JSON.stringify({
                 image: imageLink.link,

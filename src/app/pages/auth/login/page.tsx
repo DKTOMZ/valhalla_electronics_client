@@ -10,6 +10,7 @@ import { ValidationService } from '@/services/validationService';
 import Layout from '@/components/Layout';
 import Loading from '@/components/loading';
 import Image from 'next/image';
+import { UtilService } from '@/services/utilService';
 
 /**
  * Login component for user sign in.
@@ -18,9 +19,11 @@ const Login: React.FC = () => {
 
     //Services
     const validationService = FrontendServices.get<ValidationService>('ValidationService');
+    const utilService = FrontendServices.get<UtilService>('UtilService');
+
 
     //Incoming params
-    const oAuthError = useSearchParams().get('error');
+    const [oAuthError] = useState(useSearchParams().get('error'));
 
     //State variables
     const [loginEmail,setLoginEmail] = useState('');
@@ -35,11 +38,16 @@ const Login: React.FC = () => {
     const passwordError = useRef<HTMLElement>(null) as MutableRefObject<HTMLDivElement>;
     const signinError = useRef<HTMLElement>(null) as MutableRefObject<HTMLDivElement>;
 
-    useEffect(()=>{
-        if (oAuthError === 'OAuthAccountNotLinked') {
-            signinError.current.innerHTML = 'Your email is already linked with either Github or Google';
+    useEffect(() => {
+        // Check if OAuth error exists and ref is available
+        if (oAuthError === process.env.NEXT_PUBLIC_GOOGLE_OAUTH_NOT_LINKED_ERROR) {
+            // console.log(oAuthError);
+            utilService.handleErrorInputField(
+                signinError,
+                process.env.NEXT_PUBLIC_GOOGLE_OAUTH_NOT_LINKED_MSG ?? ''
+            );
         }
-    },[oAuthError]);
+    });
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -84,7 +92,7 @@ const Login: React.FC = () => {
         });
         if (response && response.ok) {
             if (response.error) {
-                signinError.current.innerHTML = response.error;
+                utilService.handleErrorInputField(signinError,response.error);
             } else {
                 //
             }

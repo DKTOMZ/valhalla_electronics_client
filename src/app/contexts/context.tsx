@@ -105,12 +105,6 @@ export const SharedStateProvider: React.FC<SharedStateProvider> = ({ children })
 
   const updateCurrency = async(newValue: CurrenciesType|null) => {
     setCurrency(newValue);
-    // if(newValue?.shortName != 'KES') {
-    //   const TOKES = currencyRates.filter((rate)=>rate.from==currency?.shortName && rate.to=='KES');
-    //   TOKES && TOKES.length > 0 && setCurrencyRate(TOKES[0].rate);
-    //   const TONEWVALUE = currencyRates.filter((rate)=>rate.from=='KES' && rate.to==newValue?.shortName);
-    //   TONEWVALUE && TONEWVALUE.length > 0 && setCurrencyRate(TONEWVALUE[0].rate);
-    // } else { /* empty */ }
   }
 
   const useCurrentCurrency = (value: Product) => {

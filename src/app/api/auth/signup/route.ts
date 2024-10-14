@@ -8,8 +8,6 @@ import { MailService } from "@/services/mailService";
 import { hash } from "bcryptjs";
 import { GenericUserTemplate } from "@/models/genericUserTemplate";
 import { MailTemplates } from "@/models/mailTemplates";
-import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
-
 
 //Services
 const dbConnService = BackendServices.get<DbConnService>('DbConnService');

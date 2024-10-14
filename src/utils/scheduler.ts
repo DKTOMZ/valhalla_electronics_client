@@ -5,9 +5,11 @@ import { GenericResponse } from '@/models/genericResponse';
 import cron from 'node-cron';
 import { FrontendServices } from '@/lib/inversify.config';
 import { CurrencyRateType } from '@/models/currencyRate';
-import { CURRENT_DATE_TIME } from './currentDateTime';
+import { BackendServices } from '@/app/api/inversify.config';
+import { UtilService } from '../services/utilService';
 
 const convertAndUpdateCurrency = async (http: HttpService, fromType: string, toType: string): Promise<boolean> => {
+
     try {
         const response = await http.post<CurrencyConvert>(`${process.env.NEXT_PUBLIC_VALHALLA_URL}/api/currency/convert`, 
             JSON.stringify({
@@ -41,14 +43,7 @@ const convertAndUpdateCurrency = async (http: HttpService, fromType: string, toT
 
 const scheduler = async () => {
     const http = FrontendServices.get<HttpService>('HttpService');
-    // const currenciesToUpdate = [
-    //     { from: 'USD', to: 'KES' },
-    //     { from: 'USD', to: 'GBP' },
-    //     { from: 'KES', to: 'USD' },
-    //     { from: 'KES', to: 'GBP' },
-    //     { from: 'GBP', to: 'KES' },
-    //     { from: 'GBP', to: 'USD' }
-    // ];
+    const utilService = BackendServices.get<UtilService>('UtilService');
 
     try {
         let currenciesToUpdate;
@@ -70,7 +65,7 @@ const scheduler = async () => {
             }
         }
     
-        console.log(`${updatedCurrencies} Currencies refreshed at:`, CURRENT_DATE_TIME());
+        console.log(`${updatedCurrencies} Currencies refreshed at:`, utilService.getCurrentDateTime());
     } catch (error:any) {
         console.log("Failed to fetch existing currencyRates from database: " + error);
     }

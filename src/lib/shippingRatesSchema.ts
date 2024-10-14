@@ -1,5 +1,8 @@
-import { CURRENT_DATE_TIME } from "@/utils/currentDateTime";
+import { BackendServices } from "@/app/api/inversify.config";
+import { UtilService } from "@/services/utilService";
 import mongoose from "mongoose";
+
+const utilService = BackendServices.get<UtilService>('UtilService');
 
 /**
  * ShippingRates schema for mongodb. Used to create a shipping rate before db operations.
@@ -24,12 +27,12 @@ const ShippingRatesSchema = new mongoose.Schema({
     created: {
         type: Date,
         required: false,
-        default: CURRENT_DATE_TIME()
+        default: utilService.getCurrentDateTime()
     },
     updated: {
         type: Date,
         required: false,
-        default: CURRENT_DATE_TIME()
+        default: utilService.getCurrentDateTime()
     }
 },{ versionKey: false });
 
